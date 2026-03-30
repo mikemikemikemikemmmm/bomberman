@@ -8,7 +8,7 @@ def batch_upscale(scale_factor=4):
     # 遍歷資料夾中的所有檔案
     for filename in os.listdir(current_dir):
         # 檢查是否為 PNG 且不是已經處理過的檔案
-        if filename.lower().endswith(".png") and not filename.endswith("_4x.png"):
+        if filename.lower().endswith("explosion.png") and not filename.endswith("_4x.png"):
             input_path = os.path.join(current_dir, filename)
             
             # 建立新檔名：原檔名 + _4x.png

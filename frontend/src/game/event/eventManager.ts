@@ -1,42 +1,44 @@
-import { TILE_WIDTH } from "./gameConfig"
-import { BombObj } from "./objects/bomb"
-import { BaseObj } from "./objects/base"
-import { ObjManager } from "./objManager"
+
+import { TILE_WIDTH } from "../gameConfig"
+import { ObjManager } from "../objManager"
+import { BaseObj } from "../objects/base"
+import { BombObj } from "../objects/bomb"
 import {
     GameEvent,
     ItemType,
     BombExplode,
-    CreateBombEvent,
+    GenerateBombEvent,
     CreateItem,
     ItemEaten,
     PlayerDie,
-    PlayerMove,
+    PlayerMoveEvent,
+    PlayerMoveEventPayload,
 } from "./events"
 
 export class EventManager {
-    constructor(private objManager: ObjManager) {}
+    constructor(private objManager: ObjManager) { }
 
     handleEvent(event: GameEvent) {
         switch (event.type) {
-            case "playerMove":  return this.onPlayerMove(event.payload)
-            case "createBomb":  return this.onCreateBomb(event.payload)
+            case "playerMove": return this.onPlayerMove(event.payload)
+            case "generateBomb": return this.onGenerateBomb(event.payload)
             case "bombExplode": return this.onBombExplode(event.payload)
-            case "createItem":  return this.onCreateItem(event.payload)
-            case "itemEaten":   return this.onItemEaten(event.payload)
-            case "playerDie":   return this.onPlayerDie(event.payload)
+            case "createItem": return this.onCreateItem(event.payload)
+            case "itemEaten": return this.onItemEaten(event.payload)
+            case "playerDie": return this.onPlayerDie(event.payload)
         }
     }
 
-    private onPlayerMove({ manKey, x, y, dir, isMoving }: PlayerMove["payload"]) {
-        const player = this.objManager.players.find(p => p.manSpriteKey === manKey)
-        if (!player) return
-        player.moveTo(x * TILE_WIDTH, y * TILE_WIDTH)
-        player.setDir(dir)
-        player.setIsMoving(isMoving)
+    private onPlayerMove(payload:PlayerMoveEventPayload) {
+        const player = this.objManager.players.find(p => p.manSpriteKey === payload.manKey)
+        if (!player) {
+            return
+        }
+        player.handleMoveEvent(payload)
     }
 
-    private onCreateBomb({ x, y, power }: CreateBomb["payload"]) {
-        const bomb = new BombObj(this.objManager.scene, x, y, power)
+    private onGenerateBomb({ x, y, bombPower }: GenerateBombEvent["payload"]) {
+        const bomb = new BombObj(this.objManager.scene, x, y, bombPower)
         this.objManager.bombs.push(bomb)
     }
 
@@ -45,7 +47,7 @@ export class EventManager {
 
         const bombIdx = bombs.findIndex(
             b => Math.round(b.sprite.x / TILE_WIDTH) === x &&
-                 Math.round(b.sprite.y / TILE_WIDTH) === y
+                Math.round(b.sprite.y / TILE_WIDTH) === y
         )
         if (bombIdx !== -1) {
             bombs[bombIdx].sprite.destroy()
@@ -55,7 +57,7 @@ export class EventManager {
         for (const cell of cells) {
             const brickIdx = bricks.findIndex(
                 b => Math.round(b.sprite.x / TILE_WIDTH) === cell.x &&
-                     Math.round(b.sprite.y / TILE_WIDTH) === cell.y
+                    Math.round(b.sprite.y / TILE_WIDTH) === cell.y
             )
             if (brickIdx !== -1) {
                 bricks[brickIdx].sprite.destroy()
@@ -79,7 +81,7 @@ export class EventManager {
         const { staticItems } = this.objManager
         const idx = staticItems.findIndex(
             i => Math.round(i.sprite.x / TILE_WIDTH) === x &&
-                 Math.round(i.sprite.y / TILE_WIDTH) === y
+                Math.round(i.sprite.y / TILE_WIDTH) === y
         )
         if (idx !== -1) {
             staticItems[idx].sprite.destroy()
@@ -102,8 +104,8 @@ export class EventManager {
 
 function itemTypeToAnimKey(itemType: ItemType): string {
     switch (itemType) {
-        case "fire":     return "fire"
-        case "speed":    return "speed"
+        case "fire": return "fire"
+        case "speed": return "speed"
         case "moreBomb": return "more-bomb"
     }
 }

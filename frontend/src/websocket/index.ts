@@ -69,9 +69,9 @@ export class WsEmitter {
 
   // ─── 傳送 ────────────────────────────────────
 
-  send<E extends keyof WsEventMap>(type: E, payload: WsEventMap[E]) {
+  sendEventToServer<E extends keyof WsEventMap>(type: E, payload: WsEventMap[E]) {
     if (this.ws?.readyState !== WebSocket.OPEN) {
-      console.warn('WebSocket 尚未連線');
+      // console.warn('WebSocket 尚未連線');
       return;
     }
     this.ws.send(JSON.stringify({ type, payload }));

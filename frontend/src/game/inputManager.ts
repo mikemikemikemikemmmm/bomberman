@@ -1,13 +1,10 @@
-import { PlayerMoveEvent } from "./events"
-import { ManObj } from "./objects/man"
-
-export type Direction = "up" | "down" | "left" | "right"
+import { PressedDir } from "./types"
 
 export class InputManager {
     keyboard: Phaser.Input.Keyboard.KeyboardPlugin
     cursors: Phaser.Types.Input.Keyboard.CursorKeys
     bombKey: Phaser.Input.Keyboard.Key
-    lastDir: Direction = "down"
+    lastDir: PressedDir = null
 
     constructor(input: Phaser.Input.InputPlugin) {
         const keyboard = input.keyboard;
@@ -18,8 +15,7 @@ export class InputManager {
         this.cursors = keyboard.createCursorKeys()
         this.bombKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
     }
-
-    getDirectionPressed(): Direction | null {
+    getDirectionPressed(): PressedDir {
         const { up, down, left, right } = this.cursors
         if (up.isDown)    { this.lastDir = "up";    return "up" }
         if (down.isDown)  { this.lastDir = "down";  return "down" }
@@ -31,4 +27,5 @@ export class InputManager {
     isBombPressed(): boolean {
         return Phaser.Input.Keyboard.JustDown(this.bombKey)
     }
+    
 }

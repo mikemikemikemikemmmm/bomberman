@@ -1,3 +1,4 @@
+import { MapType } from "../game/types"
 import { RoomDetail, RoomSummary } from "../ui/types"
 
 export type UIEventMap = {
@@ -19,7 +20,7 @@ export type UIEventMap = {
     changeMap:number
 }
 export type GameEventMap = {
-    move: void
+    playerMove: void
     generateBomb: void
     // time sync
     timeSyncPing:      { sentAt: number; from: string }

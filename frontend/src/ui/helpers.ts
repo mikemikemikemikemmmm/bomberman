@@ -13,5 +13,5 @@ export const sendMsgByUi = <E extends keyof UIEventMap>(
   eventName: E,
   payload?:any
 ) => {
-  wsEmitter.send(eventName, payload as WsEventMap[E]);
+  wsEmitter.sendEventToServer(eventName, payload as WsEventMap[E]);
 };

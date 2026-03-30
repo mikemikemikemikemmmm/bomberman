@@ -1,5 +1,5 @@
 import { Scene } from "phaser"
-import { TILE_WIDTH } from "./gameConfig"
+import { TILE_WIDTH } from "../gameConfig"
 
 
 // Sprite 設定集中管理

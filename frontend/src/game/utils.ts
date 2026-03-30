@@ -1,7 +1,4 @@
-import { Scene } from "phaser"
 import {  TILE_WIDTH } from "./gameConfig"
-import { SpriteKey } from "./sprite"
-
 export const tranIndexToPosition = (index: { y: number, x: number }) => {
     return { y: index.y * TILE_WIDTH, x: index.x * TILE_WIDTH }
 }

@@ -1,7 +1,7 @@
 import { Scene } from 'phaser'
 import { WINDOW_W, WINDOW_H } from '../gameConfig'
 
-export class HudScene extends Scene {
+export class TimerUIScene extends Scene {
     private timerText:    Phaser.GameObjects.Text
     private spectateText: Phaser.GameObjects.Text
 

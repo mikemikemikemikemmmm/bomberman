@@ -1,5 +1,5 @@
 import { Scene } from "phaser"
-import { FRAME_RATE } from "./gameConfig"
+import { FRAME_RATE } from "../gameConfig"
 import { SpriteKey } from "./sprite"
 
 // 集中管理所有動畫 key
@@ -43,8 +43,20 @@ export const ANIMS = {
     },
     explosion: {
         start: "explosion-start",
-        center: "explosion-center",
-        end: "explosion-end",
+        up: {
+            middle: "explosion-up-middle",
+            end: "explosion-up-end"
+        },
+        right: {
+            middle: "explosion-right-middle",
+            end: "explosion-right-end"
+        }, down: {
+            middle: "explosion-down-middle",
+            end: "explosion-down-end"
+        }, left: {
+            middle: "explosion-left-middle",
+            end: "explosion-left-end"
+        },
     }
 } as const
 export const createAllAnims = (scene: Scene) => {
@@ -79,8 +91,14 @@ const createAllItemAnims = (scene: Scene) => {
 const createAllExplosionAnims = (scene: Scene) => {
     const s: SpriteKey = 'explosion'
     createAnim(scene, ANIMS.explosion.start, s, 0, 3, false, true)
-    createAnim(scene, ANIMS.explosion.center, s, 4, 7, false, true)
-    createAnim(scene, ANIMS.explosion.end, s, 8, 11, false, true)
+    createAnim(scene, ANIMS.explosion.down.middle, s, 4, 7, false, true)
+    createAnim(scene, ANIMS.explosion.down.end, s, 8, 11, false, true)
+    createAnim(scene, ANIMS.explosion.left.end, s, 12, 15, false, true)
+    createAnim(scene, ANIMS.explosion.left.middle, s, 16, 19, false, true)
+    createAnim(scene, ANIMS.explosion.up.end, s, 20, 23, false, true)
+    createAnim(scene, ANIMS.explosion.up.middle, s, 24, 27, false, true)
+    createAnim(scene, ANIMS.explosion.right.end, s, 28, 25, false, true)
+    createAnim(scene, ANIMS.explosion.right.middle, s, 31, 29, false, true)
 }
 
 const createAnim = (

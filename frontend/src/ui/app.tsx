@@ -6,8 +6,18 @@ import type { RoomSummary, RoomDetail } from "./types";
 import { FAKE_ROOMS, FAKE_ROOM_DETAILS } from "../../fakeData";
 import { useWsEvent } from "./hook";
 import { wsEmitter } from "../websocket";
+export default function UIApp({ userId }: { userId: number }) {
+  const [playing, setPlaying] = useState(false)
 
-export default function UIApp({ userId, startPlaying }: { userId: number, startPlaying: () => void }) {
+  useEffect(() => {
+    const handleGameStatusChange = (e: Event) => {
+      const { isPlaying } = (e as CustomEvent).detail;
+      setPlaying(isPlaying)
+    };
+
+    window.addEventListener("gameUpdate", handleGameStatusChange);
+    return () => window.removeEventListener("gameUpdate", handleGameStatusChange);
+  }, []);
   const [playerName, setPlayerName] = useState("");
   const handleChangePlayerName = (name: string) => {
     sendMsgByUi("changeUserName", name);
@@ -15,17 +25,17 @@ export default function UIApp({ userId, startPlaying }: { userId: number, startP
   };
 
   const [rooms, setRooms] = useState<RoomSummary[]>(FAKE_ROOMS);
-  useWsEvent("getRoomsList", setRooms);
+  useWsEvent("getRoomsList", playing, setRooms);
 
   const [joinedRoomData, setJoinedRoomData] = useState<RoomDetail | null>(FAKE_ROOM_DETAILS[1]);
-  useWsEvent("getJoinedRoomData", setJoinedRoomData);
+  useWsEvent("getJoinedRoomData", playing, setJoinedRoomData);
   useEffect(() => {
     if (!joinedRoomData) {
       return
     }
-    wsEmitter.once("startPlaying", startPlaying)
+    // wsEmitter.once("startPlaying", startPlaying)
     return () => {
-      wsEmitter.off("startPlaying", startPlaying)
+      // wsEmitter.off("startPlaying", startPlaying)
     }
   }, [!!joinedRoomData])
 
@@ -83,7 +93,9 @@ export default function UIApp({ userId, startPlaying }: { userId: number, startP
     setShowMapPicker(false);
     showToast("地圖已更新：" + mapById(mapId).name);
   };
-
+  if (playing) {
+    return null
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-sky-50 to-emerald-50 font-sans">
 
