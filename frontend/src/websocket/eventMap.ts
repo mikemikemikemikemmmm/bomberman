@@ -1,35 +1,68 @@
-import { MapType } from "../game/types"
-import { RoomDetail, RoomSummary } from "../ui/types"
+import type { ManSpriteKey } from "../game/sprite_animations/sprite"
+import type { ManDirection } from "../game/types"
+
+// ─── Shapes that match backend4 wire format ──────────────────────────────────
+
+export interface RoomListItem {
+    id: number
+    currentPlayerNum: number
+    openedSecond: number
+    mapId: number
+}
+
+export interface RoomStatePlayer {
+    clientId: number
+    clientName: string
+    isReady: boolean
+    isHost: boolean
+    manSpriteKey: ManSpriteKey
+}
+
+export interface PlayerMovePayload {
+    manKey: ManSpriteKey
+    newX: number
+    newY: number
+    dir: ManDirection
+    isMoving: boolean
+    userId: number
+}
+
+export interface GenerateBombPayload {
+    manKey: ManSpriteKey
+    x: number
+    y: number
+    bombPower: number
+}
+
+// ─── Event maps ──────────────────────────────────────────────────────────────
 
 export type UIEventMap = {
-    //receive
-    getRoomsList:RoomSummary[]
-    getJoinedRoomData:RoomDetail
-    leaveRoomResponse:boolean
-    createRoomResponse:{
-        success:boolean,
-        data:RoomDetail
-    }
-    startPlaying:void
-    //send
-    changeUserName:string
-    joinRoom:number
-    leaveRoom:void
-    createRoom:void
-    changeReadyStatus:void
-    changeMap:number
+    // receive
+    roomList: RoomListItem[]
+    roomState: RoomStatePlayer[]
+    gameStarted: { gameId: number; gameEndTime: number }
+    error: { msg: string }
+    // send
+    setName: string
+    createRoom: null
+    joinRoom: number
+    leaveRoom: null
+    toggleReady: null
+    changeMap: number
+    startGame: null
 }
+
 export type GameEventMap = {
-    playerMove: void
-    generateBomb: void
-    // time sync
-    timeSyncPing:      { sentAt: number; from: string }
-    timeSyncPong:      { sentAt: number; to: string }
-    timeSyncBroadcast: { gameEndTime: number; sentAt: number }
+    playerMove: PlayerMovePayload
+    generateBomb: GenerateBombPayload
+    timeSyncPing: { sentAt: number; from: string }
+    timeSyncPong: { sentAt: number; to: string }
 }
+
 export type InitEventMap = {
-    connected: { userId: number };
-    disconnected: void;
+    connected: { userId: number }
+    disconnected: void
     errorWhenConnect: void
 }
-export type WsEventMap = UIEventMap &GameEventMap &InitEventMap
+
+export type WsEventMap = UIEventMap & GameEventMap & InitEventMap

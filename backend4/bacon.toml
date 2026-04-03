@@ -1,0 +1,3 @@
+[jobs.check]
+command = ["cargo", "check", "--color", "always"]
+need_warnings = false # 這會告訴 bacon 不要因為有警告就切換到警告顯示模式

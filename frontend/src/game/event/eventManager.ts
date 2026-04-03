@@ -1,4 +1,4 @@
-
+import { wsEmitter } from "../../websocket"
 import { TILE_WIDTH } from "../gameConfig"
 import { ObjManager } from "../objManager"
 import { BaseObj } from "../objects/base"
@@ -18,28 +18,51 @@ import {
 export class EventManager {
     constructor(private objManager: ObjManager) { }
 
-    handleEvent(event: GameEvent) {
+    initListenGameEventFromServer() {
+        wsEmitter.on("playerMove", payload => {
+            this.handleGameEvent({ type: "playerMove", payload })
+        })
+        wsEmitter.on("generateBomb", payload => {
+            this.handleGameEvent({ type: "generateBomb", payload })
+        })
+    }
+
+    destroy() {
+        wsEmitter.off("playerMove", this._onPlayerMove)
+        wsEmitter.off("generateBomb", this._onGenerateBomb)
+    }
+
+    private _onPlayerMove = (payload: PlayerMoveEventPayload) => {
+        this.handleGameEvent({ type: "playerMove", payload })
+    }
+    private _onGenerateBomb = (payload: GenerateBombEvent["payload"]) => {
+        this.handleGameEvent({ type: "generateBomb", payload })
+    }
+
+    handleGameEvent(event: GameEvent) {
         switch (event.type) {
-            case "playerMove": return this.onPlayerMove(event.payload)
-            case "generateBomb": return this.onGenerateBomb(event.payload)
-            case "bombExplode": return this.onBombExplode(event.payload)
-            case "createItem": return this.onCreateItem(event.payload)
-            case "itemEaten": return this.onItemEaten(event.payload)
-            case "playerDie": return this.onPlayerDie(event.payload)
+            case "playerMove":    return this.onPlayerMove(event.payload)
+            case "generateBomb":  return this.onGenerateBomb(event.payload)
+            case "bombExplode":   return this.onBombExplode(event.payload)
+            case "createItem":    return this.onCreateItem(event.payload)
+            case "itemEaten":     return this.onItemEaten(event.payload)
+            case "playerDie":     return this.onPlayerDie(event.payload)
         }
     }
 
-    private onPlayerMove(payload:PlayerMoveEventPayload) {
+    private onPlayerMove(payload: PlayerMoveEventPayload) {
+        const userId = this.objManager.scene.registry.get("userId") as number
+        if (payload.userId === userId) return  // ignore own echoes
         const player = this.objManager.players.find(p => p.manSpriteKey === payload.manKey)
-        if (!player) {
-            return
-        }
+        if (!player) return
         player.handleMoveEvent(payload)
     }
 
     private onGenerateBomb({ x, y, bombPower }: GenerateBombEvent["payload"]) {
-        const bomb = new BombObj(this.objManager.scene, x, y, bombPower)
+        const index = { x, y }
+        const bomb = new BombObj(this.objManager.scene, index, bombPower)
         this.objManager.bombs.push(bomb)
+        this.objManager.mapManager.setMapTileByIndex(index, bomb)
     }
 
     private onBombExplode({ x, y, cells }: BombExplode["payload"]) {
@@ -72,7 +95,7 @@ export class EventManager {
     }
 
     private onCreateItem({ x, y, itemType }: CreateItem["payload"]) {
-        const item = new BaseObj(this.objManager.scene, x, y, "items", 0)
+        const item = new BaseObj(this.objManager.scene, { x, y }, "items", 0, "item")
         item.sprite.play(itemTypeToAnimKey(itemType))
         this.objManager.staticItems.push(item)
     }
@@ -104,8 +127,8 @@ export class EventManager {
 
 function itemTypeToAnimKey(itemType: ItemType): string {
     switch (itemType) {
-        case "fire": return "fire"
-        case "speed": return "speed"
+        case "fire":     return "fire"
+        case "speed":    return "speed"
         case "moreBomb": return "more-bomb"
     }
 }

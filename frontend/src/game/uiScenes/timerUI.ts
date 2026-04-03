@@ -1,12 +1,12 @@
 import { Scene } from 'phaser'
-import { WINDOW_W, WINDOW_H } from '../gameConfig'
+import { WINDOW_W, WINDOW_H, SCENE_MAP } from '../gameConfig'
 
 export class TimerUIScene extends Scene {
     private timerText:    Phaser.GameObjects.Text
     private spectateText: Phaser.GameObjects.Text
 
     constructor() {
-        super('hud')
+            super(SCENE_MAP.TIMER)
     }
 
     create() {

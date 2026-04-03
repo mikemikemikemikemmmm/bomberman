@@ -1,6 +1,7 @@
 import EventEmitter from 'eventemitter3';
 import { WS_URL } from '../config';
 import { WsEventMap } from './eventMap';
+import { RoomPlayer } from '../ui/types';
 export class WsEmitter {
   private emitter = new EventEmitter();
   private ws: WebSocket | null = null;
@@ -18,9 +19,10 @@ export class WsEmitter {
 
   init() {
     if (this.ws?.readyState === WebSocket.OPEN) return; // 已連線不重複初始化
-    this.ws = new WebSocket(this.url);
+    this.ws = new WebSocket("ws://localhost:8081");
 
     this.ws.onopen = () => {
+      console.log("connected success")
       this.retryCount = 0;
       // resolve 所有等待中的 Promise
       this.connectionResolvers.forEach(resolve => resolve());
@@ -29,9 +31,22 @@ export class WsEmitter {
     };
 
     this.ws.onmessage = (event: MessageEvent) => {
+      console.log("receive", event)
       try {
         const { type, payload } = JSON.parse(event.data);
         this.emit(type, payload);
+        if (type === "gameStarted") {
+          window.dispatchEvent(new CustomEvent("startGame", {
+            detail: {
+              gameEndTime: payload.gameEndTime, players: [{
+                  clientId:1,
+                  clientName:"mike",
+                  manSpriteKey:"man1"
+              } as RoomPlayer]
+            }
+          }));
+
+        }
       } catch {
         console.error('訊息解析失敗', event.data);
       }

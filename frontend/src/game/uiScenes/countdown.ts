@@ -1,5 +1,5 @@
 import { Scene } from 'phaser'
-import { WINDOW_W, WINDOW_H } from '../gameConfig'
+import { WINDOW_W, WINDOW_H, SCENE_MAP } from '../gameConfig'
 
 const START = 3
 
@@ -9,7 +9,7 @@ interface CountdownData {
 
 export class CountdownScene extends Scene {
     constructor() {
-        super('countdown')
+        super(SCENE_MAP.COUNT_DOWN)
     }
 
     create(data: CountdownData) {

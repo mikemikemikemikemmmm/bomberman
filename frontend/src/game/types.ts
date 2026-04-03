@@ -1,11 +1,14 @@
 import { BaseObj } from "./objects/base"
 
 export type ObjType = "man" | "bomb" | "brick" | "wall" | "item"
-
-export interface MapMetaData {
-    width: number,
-    height: number,
-    map: ("man1" | "man2" | "man3" | "man4" | "brick" | "wall" | null)[][]
+export enum a{
+    A,V
+}
+export interface MapData {
+    w: number,
+    h: number,
+    game_end_max_minute: number,
+    matrix: ("man1" | "man2" | "man3" | "man4" | "brick" | "wall" | null)[][]
 }
 export type MapTile = null | BaseObj | "wall"
 export type MapTileType = 'empty' | ObjType

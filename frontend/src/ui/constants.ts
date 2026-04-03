@@ -1,4 +1,4 @@
-import type { MapData, PingLevel } from "./types";
+import type { MapData } from "./types";
 
 export const MAX_PLAYERS = 4;
 export const MY_PLAYER_ID = -1;
@@ -19,10 +19,4 @@ export const MAP_UI_META: Record<number, { icon: string; color: string; bg: stri
   4: { icon: "🏙",  color: "text-violet-600", bg: "bg-violet-50" },
   5: { icon: "🌋",  color: "text-red-500",    bg: "bg-red-50"    },
   6: { icon: "🌊",  color: "text-cyan-600",   bg: "bg-cyan-50"   },
-};
-
-export const PING_STYLES: Record<PingLevel, string> = {
-  good: "bg-green-100 text-green-700",
-  mid:  "bg-amber-100 text-amber-700",
-  bad:  "bg-red-100   text-red-600",
 };

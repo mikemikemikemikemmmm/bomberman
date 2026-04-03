@@ -12,7 +12,7 @@ interface Props {
 export default function RoomCard({ room, isCurrent, onJoin }: Props) {
   const map   = mapById(room.mapId);
   const mapUi = MAP_UI_META[room.mapId];
-  const joinable = room.status === "waiting" && room.currentPlayerNum < MAX_PLAYERS;
+  const joinable = room.currentPlayerNum < MAX_PLAYERS;
 
   return (
     <div className="bg-white border-[1.5px] border-slate-100 rounded-2xl px-4 py-3 grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-3 hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-50 hover:-translate-y-px transition-all">

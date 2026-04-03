@@ -1,46 +1,58 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import RoomCard from "./components/RoomCard";
 import CurrentRoom from "./components/CurrentRoom";
 import { mapById, sendMsgByUi } from "./helpers";
-import type { RoomSummary, RoomDetail } from "./types";
-import { FAKE_ROOMS, FAKE_ROOM_DETAILS } from "../../fakeData";
+import type { RoomSummary, RoomDetail, RoomPlayer } from "./types";
 import { useWsEvent } from "./hook";
 import { wsEmitter } from "../websocket";
+
 export default function UIApp({ userId }: { userId: number }) {
-  const [playing, setPlaying] = useState(false)
+  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     const handleGameStatusChange = (e: Event) => {
-      const { isPlaying } = (e as CustomEvent).detail;
-      setPlaying(isPlaying)
+      const isPlaying = (e as CustomEvent<boolean>).detail;
+      setPlaying(isPlaying);
     };
-
     window.addEventListener("gameUpdate", handleGameStatusChange);
     return () => window.removeEventListener("gameUpdate", handleGameStatusChange);
   }, []);
+
   const [playerName, setPlayerName] = useState("");
   const handleChangePlayerName = (name: string) => {
-    sendMsgByUi("changeUserName", name);
+    sendMsgByUi("setName", name);
     setPlayerName(name);
   };
 
-  const [rooms, setRooms] = useState<RoomSummary[]>(FAKE_ROOMS);
-  useWsEvent("getRoomsList", playing, setRooms);
+  // ─── Room list (lobby) ────────────────────────────────────────────────────
+  const [rooms, setRooms] = useState<RoomSummary[]>([]);
+  useWsEvent("roomList", playing, setRooms);
 
-  const [joinedRoomData, setJoinedRoomData] = useState<RoomDetail | null>(FAKE_ROOM_DETAILS[1]);
-  useWsEvent("getJoinedRoomData", playing, setJoinedRoomData);
+  // ─── Current room ─────────────────────────────────────────────────────────
+  // We track roomId locally (known when sending joinRoom / createRoom)
+  // and mapId locally (known when sending changeMap; default 1)
+  const joinedRoomIdRef = useRef<number | null>(null);
+  const [joinedRoom, setJoinedRoom] = useState<RoomDetail | null>(null);
+  const [localMapId, setLocalMapId] = useState(1);
+
+  useWsEvent("roomState", playing, (players: RoomPlayer[]) => {
+    setJoinedRoom(prev => ({
+      id: joinedRoomIdRef.current ?? prev?.id ?? 0,
+      players,
+      mapId: localMapId,
+    }));
+  });
+
+  // ─── Game started ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!joinedRoomData) {
-      return
-    }
-    // wsEmitter.once("startPlaying", startPlaying)
-    return () => {
-      // wsEmitter.off("startPlaying", startPlaying)
-    }
-  }, [!!joinedRoomData])
+    const handler = ({ gameEndTime }: { gameId: number; gameEndTime: number }) => {
+      window.dispatchEvent(new CustomEvent("startGame", { detail: { gameEndTime, players: joinedRoom?.players ?? [] } }));
+    };
+    wsEmitter.on("gameStarted", handler);
+    return () => wsEmitter.off("gameStarted", handler);
+  }, [joinedRoom]);
 
-  const [showMapPicker, setShowMapPicker] = useState(false);
-
+  // ─── Toast ────────────────────────────────────────────────────────────────
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = (msg: string) => {
@@ -49,53 +61,65 @@ export default function UIApp({ userId }: { userId: number }) {
     toastTimer.current = setTimeout(() => setToast(null), 2800);
   };
 
-  const hasJoinedRoom = joinedRoomData !== null;
-  const self = joinedRoomData?.players.find(p => p.id === userId);
-  const amHost = self?.isHost ?? false;
-  const isReady = self?.isReady ?? false;
+  // ─── Error from server ────────────────────────────────────────────────────
+  useEffect(() => {
+    const handler = ({ msg }: { msg: string }) => showToast(msg);
+    wsEmitter.on("error", handler);
+    return () => wsEmitter.off("error", handler);
+  }, []);
+
+  // ─── Actions ──────────────────────────────────────────────────────────────
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   const joinRoom = (roomId: number) => {
     if (!playerName.trim()) return showToast("請先輸入玩家名稱");
-    if (hasJoinedRoom) return showToast("請先離開目前的房間");
+    if (joinedRoom) return showToast("請先離開目前的房間");
+    joinedRoomIdRef.current = roomId;
     sendMsgByUi("joinRoom", roomId);
   };
 
   const leaveRoom = () => {
-    if (!hasJoinedRoom) return;
-    wsEmitter.once("leaveRoomResponse", (success) => {
-      if (!success) return showToast("離開房間失敗");
-      setJoinedRoomData(null);
-      setShowMapPicker(false);
-      showToast("已離開房間");
-    });
-    sendMsgByUi("leaveRoom");
+    if (!joinedRoom) return;
+    joinedRoomIdRef.current = null;
+    setJoinedRoom(null);
+    setShowMapPicker(false);
+    sendMsgByUi("leaveRoom", null);
+    showToast("已離開房間");
   };
 
   const createRoom = () => {
     if (!playerName.trim()) return showToast("請先輸入玩家名稱");
-    if (hasJoinedRoom) return showToast("請先離開目前的房間");
-    wsEmitter.once("createRoomResponse", ({ success, data }) => {
-      if (!success) return showToast("創建房間失敗");
-      setJoinedRoomData(data);
-      showToast("房間已創建！");
-    });
-    sendMsgByUi("createRoom");
+    if (joinedRoom) return showToast("請先離開目前的房間");
+    // Room ID will be unknown until roomState arrives; use 0 as placeholder
+    joinedRoomIdRef.current = 0;
+    sendMsgByUi("createRoom", null);
   };
 
   const toggleReady = () => {
-    if (!hasJoinedRoom) return;
-    sendMsgByUi("changeReadyStatus");
+    if (!joinedRoom) return;
+    sendMsgByUi("toggleReady", null);
+  };
+
+  const startGame = () => {
+    if (!joinedRoom) return;
+    sendMsgByUi("startGame", null);
   };
 
   const changeMap = (mapId: number) => {
-    if (!hasJoinedRoom) return;
+    if (!joinedRoom) return;
+    setLocalMapId(mapId);
+    setJoinedRoom(prev => prev ? { ...prev, mapId } : null);
     sendMsgByUi("changeMap", mapId);
     setShowMapPicker(false);
     showToast("地圖已更新：" + mapById(mapId).name);
   };
-  if (playing) {
-    return null
-  }
+
+  const self = joinedRoom?.players.find(p => p.clientId === userId);
+  const amHost = self?.isHost ?? false;
+  const isReady = self?.isReady ?? false;
+
+  if (playing) return null;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-sky-50 to-emerald-50 font-sans">
 
@@ -155,7 +179,7 @@ export default function UIApp({ userId }: { userId: number }) {
                 <RoomCard
                   key={room.id}
                   room={room}
-                  isCurrent={joinedRoomData?.id === room.id}
+                  isCurrent={joinedRoom?.id === room.id}
                   onJoin={joinRoom}
                 />
               ))}
@@ -164,7 +188,8 @@ export default function UIApp({ userId }: { userId: number }) {
         </section>
 
         <CurrentRoom
-          currentRoom={joinedRoomData}
+          currentRoom={joinedRoom}
+          userId={userId}
           amHost={amHost}
           isReady={isReady}
           showMapPicker={showMapPicker}
@@ -172,6 +197,7 @@ export default function UIApp({ userId }: { userId: number }) {
           onLeave={leaveRoom}
           onToggleMapPicker={() => setShowMapPicker(v => !v)}
           onChangeMap={changeMap}
+          onStartGame={startGame}
         />
       </div>
 

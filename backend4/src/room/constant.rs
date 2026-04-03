@@ -1,0 +1,1 @@
+pub const MAX_ROOM_PLAYER_NUM:usize =4;

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd.exe /c \"go version\")",
+      "Bash(cmd.exe /c \"where go\")",
+      "Bash(cargo check:*)"
+    ]
+  }
+}

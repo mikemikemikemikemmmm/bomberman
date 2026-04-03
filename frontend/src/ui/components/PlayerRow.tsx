@@ -1,14 +1,11 @@
-import { PING_STYLES } from "../constants";
-import type { Player } from "../types";
+import type { RoomPlayer } from "../types";
 
 interface Props {
-  player: Player;
+  player: RoomPlayer;
   isMe: boolean;
 }
 
 export default function PlayerRow({ player, isMe }: Props) {
-  const pingLabel = player.pingLevel === "good" ? "良好" : player.pingLevel === "mid" ? "普通" : "較差";
-
   return (
     <div className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl border-[1.5px] transition-all
       ${player.isHost ? "border-amber-200 bg-amber-50"
@@ -20,7 +17,7 @@ export default function PlayerRow({ player, isMe }: Props) {
         ${player.isHost ? "bg-amber-100 text-amber-700"
           : isMe        ? "bg-indigo-100 text-indigo-600"
           :                "bg-slate-200 text-slate-500"}`}>
-        {player.name.slice(0, 2).toUpperCase()}
+        {player.clientName.slice(0, 2).toUpperCase()}
         {player.isHost && (
           <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-amber-400 rounded-full flex items-center justify-center text-[7px]">
             👑
@@ -31,12 +28,10 @@ export default function PlayerRow({ player, isMe }: Props) {
       {/* Info */}
       <div className="flex-1 min-w-0">
         <p className={`text-[13px] font-bold truncate ${player.isHost ? "text-amber-700" : "text-slate-800"}`}>
-          {player.name}
+          {player.clientName}
         </p>
         <div className="flex items-center gap-1 mt-0.5">
-          <span className={`text-[10px] font-bold px-1.5 py-px rounded-full ${PING_STYLES[player.pingLevel]}`}>
-            {pingLabel}
-          </span>
+          <span className="text-[10px] font-bold text-slate-400">{player.manSpriteKey}</span>
           {isMe && (
             <span className="text-[10px] font-bold text-indigo-600 bg-indigo-100 px-1.5 py-px rounded-full">
               YOU

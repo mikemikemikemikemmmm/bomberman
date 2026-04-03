@@ -4,10 +4,9 @@ import type { RoomDetail } from "../types";
 import MapPicker from "./MapPicker";
 import PlayerRow from "./PlayerRow";
 
-const MY_PLAYER_ID = -1;
-
 interface Props {
   currentRoom: RoomDetail | null;
+  userId: number;
   amHost: boolean;
   isReady: boolean;
   showMapPicker: boolean;
@@ -15,10 +14,12 @@ interface Props {
   onLeave: () => void;
   onToggleMapPicker: () => void;
   onChangeMap: (mapId: number) => void;
+  onStartGame: () => void;
 }
 
 export default function CurrentRoom({
   currentRoom,
+  userId,
   amHost,
   isReady,
   showMapPicker,
@@ -26,9 +27,15 @@ export default function CurrentRoom({
   onLeave,
   onToggleMapPicker,
   onChangeMap,
+  onStartGame,
 }: Props) {
   const mapData = currentRoom ? mapById(currentRoom.mapId) : null;
   const mapUi   = currentRoom ? MAP_UI_META[currentRoom.mapId] : null;
+
+  const allOthersReady = currentRoom
+    ? currentRoom.players.filter(p => !p.isHost).every(p => p.isReady)
+    : false;
+  const canStart = amHost && allOthersReady && (currentRoom?.players.length ?? 0) > 1;
 
   return (
     <aside>
@@ -89,7 +96,7 @@ export default function CurrentRoom({
 
               <div className="flex flex-col gap-1.5">
                 {currentRoom.players.map(player => (
-                  <PlayerRow key={player.id} player={player} isMe={player.id === MY_PLAYER_ID} />
+                  <PlayerRow key={player.clientId} player={player} isMe={player.clientId === userId} />
                 ))}
                 {Array.from({ length: Math.max(0, MAX_PLAYERS - currentRoom.players.length) }).map((_, i) => (
                   <div key={i} className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl border-[1.5px] border-dashed border-slate-200 opacity-50">
@@ -102,16 +109,30 @@ export default function CurrentRoom({
               <div className="h-px bg-slate-100 my-3" />
 
               <div className="flex flex-col gap-2">
-                <button
-                  onClick={onToggleReady}
-                  className={`w-full h-9 rounded-xl text-[13px] font-bold transition-all border-[1.5px] ${
-                    isReady
-                      ? "bg-green-500 text-white border-green-500 shadow-md shadow-green-100"
-                      : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                  }`}
-                >
-                  {isReady ? "✓ 已準備好" : "準備好了！"}
-                </button>
+                {amHost ? (
+                  <button
+                    onClick={onStartGame}
+                    disabled={!canStart}
+                    className={`w-full h-9 rounded-xl text-[13px] font-bold transition-all border-[1.5px] ${
+                      canStart
+                        ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200 hover:bg-indigo-700"
+                        : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                    }`}
+                  >
+                    開始遊戲
+                  </button>
+                ) : (
+                  <button
+                    onClick={onToggleReady}
+                    className={`w-full h-9 rounded-xl text-[13px] font-bold transition-all border-[1.5px] ${
+                      isReady
+                        ? "bg-green-500 text-white border-green-500 shadow-md shadow-green-100"
+                        : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                    }`}
+                  >
+                    {isReady ? "✓ 已準備好" : "準備好了！"}
+                  </button>
+                )}
                 <button
                   onClick={onLeave}
                   className="w-full h-8 rounded-xl text-[12px] font-bold text-red-500 bg-red-50 hover:bg-red-100 border-[1.5px] border-red-200 transition-colors"
