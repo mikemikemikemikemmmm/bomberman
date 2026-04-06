@@ -4,7 +4,13 @@ import { TILE_WIDTH } from "../gameConfig"
 
 // Sprite 設定集中管理
 const SPRITES = ['man1', 'man2', 'man3', 'man4', 'items', 'explosion'] as const
-export type ManSpriteKey = 'man1'| 'man2'| 'man3'| 'man4'
+export enum ManSpriteKey {
+    Man1 = "man1"
+    , Man2 = "man2"
+    ,
+    Man3 = "man3",
+    Man4 = "man4"
+}
 export type SpriteKey = typeof SPRITES[number]
 
 export const loadAllSprites = (scene: Scene) => {

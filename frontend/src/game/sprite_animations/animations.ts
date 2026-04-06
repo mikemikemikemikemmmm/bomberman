@@ -36,10 +36,11 @@ export const ANIMS = {
         bomb: "bomb",
         wall: "wall",
         brick: "brick",
-        brickRuin: "brick-ruin",
+        brickRuin: "brickRuin",
         fire: "fire",
         speed: "speed",
-        moreBomb: "more-bomb",
+        moreBomb: "moreBomb",
+        power: "power",
     },
     explosion: {
         start: "explosion-start",
@@ -90,15 +91,15 @@ const createAllItemAnims = (scene: Scene) => {
 
 const createAllExplosionAnims = (scene: Scene) => {
     const s: SpriteKey = 'explosion'
-    createAnim(scene, ANIMS.explosion.start, s, 0, 3, false, true)
-    createAnim(scene, ANIMS.explosion.down.middle, s, 4, 7, false, true)
-    createAnim(scene, ANIMS.explosion.down.end, s, 8, 11, false, true)
-    createAnim(scene, ANIMS.explosion.left.end, s, 12, 15, false, true)
-    createAnim(scene, ANIMS.explosion.left.middle, s, 16, 19, false, true)
-    createAnim(scene, ANIMS.explosion.up.end, s, 20, 23, false, true)
-    createAnim(scene, ANIMS.explosion.up.middle, s, 24, 27, false, true)
-    createAnim(scene, ANIMS.explosion.right.end, s, 28, 25, false, true)
-    createAnim(scene, ANIMS.explosion.right.middle, s, 31, 29, false, true)
+    createAnim(scene, ANIMS.explosion.start, s, 0, 3, true, true)
+    createAnim(scene, ANIMS.explosion.down.middle, s, 4, 7, true, true)
+    createAnim(scene, ANIMS.explosion.down.end, s, 8, 11, true, true)
+    createAnim(scene, ANIMS.explosion.left.end, s, 12, 15, true, true)
+    createAnim(scene, ANIMS.explosion.left.middle, s, 16, 19, true, true)
+    createAnim(scene, ANIMS.explosion.up.end, s, 20, 23, true, true)
+    createAnim(scene, ANIMS.explosion.up.middle, s, 24, 27, true, true)
+    createAnim(scene, ANIMS.explosion.right.end, s, 31, 28, true, true)
+    createAnim(scene, ANIMS.explosion.right.middle, s, 35, 32, true, true)
 }
 
 const createAnim = (

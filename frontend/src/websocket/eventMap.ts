@@ -1,68 +1,55 @@
-import type { ManSpriteKey } from "../game/sprite_animations/sprite"
-import type { ManDirection } from "../game/types"
+import type { RoomSummary, RoomPlayer } from '../ui/types'
+import type { ManSpriteKey } from '../game/sprite_animations/sprite'
+import type { ManDirection } from '../game/types'
+import type { ItemType } from '../game/event/events'
+import { GameMetaData } from '../store'
 
-// ─── Shapes that match backend4 wire format ──────────────────────────────────
-
-export interface RoomListItem {
-    id: number
-    currentPlayerNum: number
-    openedSecond: number
-    mapId: number
+interface PlayerMovePayload {
+  manKey: ManSpriteKey
+  newX: number
+  newY: number
+  dir: ManDirection
+  isMoving: boolean
+  userId: number
 }
 
-export interface RoomStatePlayer {
-    clientId: number
-    clientName: string
-    isReady: boolean
-    isHost: boolean
-    manSpriteKey: ManSpriteKey
+interface GenerateBombPayload {
+  manKey: ManSpriteKey
+  x: number
+  y: number
+  bombPower: number
 }
 
-export interface PlayerMovePayload {
-    manKey: ManSpriteKey
-    newX: number
-    newY: number
-    dir: ManDirection
-    isMoving: boolean
-    userId: number
+interface GridPos { x: number; y: number }
+
+export interface WsEventMap {
+  // ── server → client ──────────────────────────────────────────────────────
+  connected: { userId: number }
+  roomList: RoomSummary[]
+  roomState: { roomId: number; mapId: number; players: RoomPlayer[] }
+  error: { msg: string }
+  disconnected: undefined
+  errorWhenConnect: undefined
+  gameMetaData: GameMetaData
+  playerMove: PlayerMovePayload
+  generateBomb: GenerateBombPayload
+  bombExplode: { x: number; y: number; cells: GridPos[] }
+  createItem: { x: number; y: number; itemType: ItemType }
+  playerDie: { manKey: ManSpriteKey }
+  itemEaten: { manKey: ManSpriteKey; x: number; y: number; itemType: ItemType }
+  gameOver: { winnerKey: ManSpriteKey | null }
+  gameStateChanged: any
+  timeSyncPong: { sentAt: number; to: string }
+
+  // ── client → server ──────────────────────────────────────────────────────
+  setName: string
+  createRoom: undefined
+  joinRoom: number
+  leaveRoom: undefined
+  toggleReady: undefined
+  changeMap: number
+  startGame: undefined
+  timeSyncPing: { sentAt: number; from: string }
 }
 
-export interface GenerateBombPayload {
-    manKey: ManSpriteKey
-    x: number
-    y: number
-    bombPower: number
-}
-
-// ─── Event maps ──────────────────────────────────────────────────────────────
-
-export type UIEventMap = {
-    // receive
-    roomList: RoomListItem[]
-    roomState: RoomStatePlayer[]
-    gameStarted: { gameId: number; gameEndTime: number }
-    error: { msg: string }
-    // send
-    setName: string
-    createRoom: null
-    joinRoom: number
-    leaveRoom: null
-    toggleReady: null
-    changeMap: number
-    startGame: null
-}
-
-export type GameEventMap = {
-    playerMove: PlayerMovePayload
-    generateBomb: GenerateBombPayload
-    timeSyncPing: { sentAt: number; from: string }
-    timeSyncPong: { sentAt: number; to: string }
-}
-
-export type InitEventMap = {
-    connected: { userId: number }
-    disconnected: void
-    errorWhenConnect: void
-}
-
-export type WsEventMap = UIEventMap & GameEventMap & InitEventMap
+export type UIEventMap = WsEventMap

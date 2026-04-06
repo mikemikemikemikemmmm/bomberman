@@ -48,6 +48,10 @@ pub enum ItemType {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GridPos {
-    pub x: i32,
-    pub y: i32,
+    pub x: u32,
+    pub y: u32,
+}
+pub struct MapIndex{
+    pub x:u32,
+    pub y:u32
 }

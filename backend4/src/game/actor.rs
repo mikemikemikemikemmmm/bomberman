@@ -6,8 +6,8 @@ use tracing::info;
 
 use crate::game::command::GameCommand;
 use crate::game::config::GAME_TICK_MS;
-use crate::game::game::GameState;
-use crate::game::gameStateManager::GameStateManager;
+use crate::game::state::game_state::GameState;
+use crate::game::state::game_state_manager::GameStateManager;
 use crate::game::map::ALL_MAP_DATA;
 use crate::room::room::ClientDataForState;
 use crate::state::AppState;
@@ -56,13 +56,8 @@ pub async fn run_game_actor(
     loop {
         tokio::select! {
             _ = ticker.tick() => {
-                GameStateManager::consume_game_commands(&mut command_list, game_id, &player_ids, state, &mut game_state);
-                GameStateManager::handle_all_players_move(&mut game_state);
-                GameStateManager::handle_bomb_explode(&mut game_state, &player_ids, state);
-                GameStateManager::handle_player_eat_items(&mut game_state);
-                GameStateManager::broadcast_changes_to_players(&mut game_state, &player_ids, state);
-                GameStateManager::handle_player_die(&mut game_state, &player_ids, state);
-                GameStateManager::handle_game_over(&mut game_state, &player_ids, state);
+                GameStateManager::consume_received_commands(&mut command_list, game_id, &player_ids, state, &mut game_state);
+
                 if game_state.game_over {
                     break;
                 }

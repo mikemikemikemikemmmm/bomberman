@@ -1,14 +1,13 @@
 import { ManDirection } from "../types"
 import type { ManSpriteKey } from "../sprite_animations/sprite"
 export type ItemType = "fire" | "speed" | "moreBomb"
-export interface PlayerMoveEventPayload{
-        manKey: ManSpriteKey
-        newX: number
-        newY: number
-        dir: ManDirection
-        isMoving: boolean
-        userId:number
-    }
+export interface PlayerMoveEventPayload {
+    manKey: ManSpriteKey
+    newX: number
+    newY: number
+    dir: ManDirection
+    isMoving: boolean
+}
 export interface PlayerMoveEvent {
     type: "playerMove"
     payload: PlayerMoveEventPayload
@@ -17,7 +16,6 @@ export interface PlayerMoveEvent {
 export interface GenerateBombEvent {
     type: "generateBomb"
     payload: {
-        manKey: ManSpriteKey
         x: number
         y: number
         bombPower: number
@@ -29,6 +27,7 @@ export interface BombExplode {
     payload: {
         x: number
         y: number
+        manSpriteKey: ManSpriteKey,
         cells: { x: number; y: number }[]
     }
 }
@@ -42,13 +41,11 @@ export interface CreateItem {
     }
 }
 
-export interface ItemEaten {
-    type: "itemEaten"
+export interface RemoveItem {
+    type: "removeItem"
     payload: {
-        manKey: ManSpriteKey
         x: number
         y: number
-        itemType: ItemType
     }
 }
 
@@ -56,17 +53,26 @@ export interface PlayerDie {
     type: "playerDie"
     payload: {
         manKey: ManSpriteKey
+    }[]
+}
+export interface GameOver {
+    type: "gameOver"
+}
+export interface PlayerGetItemEvent {
+    type: "playerGetItem"
+    payload: {
+        x: number
+        y: number
+        manKey: ManSpriteKey
+        itemType: ItemType
     }
 }
-
-export type GameEvent =
+export type GameStateChangeEvent =
     | PlayerMoveEvent
     | GenerateBombEvent
     | BombExplode
     | CreateItem
-    | ItemEaten
+    | RemoveItem
     | PlayerDie
-
-export interface EventFromServer{
-    
-}
+    | GameOver
+    | PlayerGetItemEvent

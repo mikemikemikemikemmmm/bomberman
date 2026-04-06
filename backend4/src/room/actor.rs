@@ -123,7 +123,7 @@ pub async fn run_room_actor(
 }
 
 fn broadcast_room_state(room: &RoomState, state: &AppState) {
-    let msg = Message::Text(make_ws_msg_room_state(&room.to_client_data()).into());
+    let msg = Message::Text(make_ws_msg_room_state(room.id, room.map_id, &room.to_client_data()).into());
     for p in &room.players {
         state.send_to_client(p.id, msg.clone());
     }

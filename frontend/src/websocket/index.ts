@@ -1,7 +1,6 @@
 import EventEmitter from 'eventemitter3';
 import { WS_URL } from '../config';
 import { WsEventMap } from './eventMap';
-import { RoomPlayer } from '../ui/types';
 export class WsEmitter {
   private emitter = new EventEmitter();
   private ws: WebSocket | null = null;
@@ -34,19 +33,11 @@ export class WsEmitter {
       console.log("receive", event)
       try {
         const { type, payload } = JSON.parse(event.data);
-        this.emit(type, payload);
-        if (type === "gameStarted") {
-          window.dispatchEvent(new CustomEvent("startGame", {
-            detail: {
-              gameEndTime: payload.gameEndTime, players: [{
-                  clientId:1,
-                  clientName:"mike",
-                  manSpriteKey:"man1"
-              } as RoomPlayer]
-            }
-          }));
-
-        }
+        // if (type === "gameStarted") {
+        //   useGlobalStore().setGameMetaData(payload) //TODO
+        // } else {
+          this.emit(type, payload);
+        // }
       } catch {
         console.error('訊息解析失敗', event.data);
       }

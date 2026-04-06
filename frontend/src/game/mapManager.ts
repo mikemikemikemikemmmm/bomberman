@@ -1,22 +1,29 @@
 import { TILE_WIDTH, WINDOW_H, WINDOW_W } from "./gameConfig";
 import { BaseObj } from "./objects/base";
-import { BombObj } from "./objects/bomb";
 import { ManObj } from "./objects/man";
-import { MapMetaData, MapMatrix, Position, MapTileType } from "./types";
+import { MapMatrix, MapTile, Position, MapTileType, MapIndex, OriginMapMatrix, CountdownMapIndex } from "./types";
 import { tranPositionToIndex } from "./utils";
 import type { RoomPlayer } from "../ui/types";
+import { ManSpriteKey } from "./sprite_animations/sprite";
+import { ObjManager } from "./objManager";
+import { GameMetaData } from "../store";
+import { FireObj } from "./objects/fire";
 
 export class MapManager {
     background: Phaser.GameObjects.RenderTexture
     map!: MapMatrix
-    bricks: BaseObj[] = []
 
-    constructor(mapMetaData: MapMetaData, private scene: Phaser.Scene, private playerList: ManObj[]) {
-        this.initByMap(mapMetaData)
+    constructor(private scene: Phaser.Scene, gameMetaData: GameMetaData, private playerList: ManObj[]) {
+        this.initByMap(gameMetaData)
     }
-
-    setMapTileByIndex(pos: { x: number, y: number }, obj: BaseObj) {
-        this.map[pos.y][pos.x] = obj
+    cleanMapTileByIndex(index: { x: number, y: number }) {
+        this.map[index.y][index.x] = null
+    }
+    setMapTileByIndex(index: { x: number, y: number }, obj: MapTile) {
+        this.map[index.y][index.x] = obj
+    }
+    isTileEmpty(index: { x: number, y: number }) {
+        return this.map[index.y][index.x] === null
     }
     getMapTileByIndex(pos: { x: number, y: number }) {
         return this.map[pos.y][pos.x]
@@ -28,24 +35,22 @@ export class MapManager {
         return tile.getObjType()
     }
     canManMoveByPosition(pos: Position, manObj: ManObj) {
-        const EPSILON = 0.1
+        //tile width would cover to next tile , need to  -1
         const fourPoint = [
-            { x: pos.x + EPSILON,              y: pos.y + EPSILON },
-            { x: pos.x + TILE_WIDTH - EPSILON,  y: pos.y + EPSILON },
-            { x: pos.x + EPSILON,              y: pos.y + TILE_WIDTH - EPSILON },
-            { x: pos.x + TILE_WIDTH - EPSILON,  y: pos.y + TILE_WIDTH - EPSILON },
+            { x: pos.x, y: pos.y },
+            { x: pos.x + TILE_WIDTH - 1, y: pos.y },
+            { x: pos.x, y: pos.y + TILE_WIDTH - 1 },
+            { x: pos.x + TILE_WIDTH - 1, y: pos.y + TILE_WIDTH - 1 },
         ]
         return fourPoint.every(_pos => {
             const mapIndex = tranPositionToIndex(_pos)
-            const { x, y } = mapIndex
-            if (!this.map[y] || this.map[y][x] === undefined) return false
             const mapTileType = this.getMapTileTypeByIndex(mapIndex)
             if (mapTileType === "bomb") {
-                const isOverlappingCanPassBomb = manObj.canPassBombPosList.some(bPos =>
-                    _pos.x < bPos.x + TILE_WIDTH &&
-                    _pos.x + TILE_WIDTH > bPos.x &&
-                    _pos.y < bPos.y + TILE_WIDTH &&
-                    _pos.y + TILE_WIDTH > bPos.y
+                const isOverlappingCanPassBomb = manObj.canPassBombPosList.some(bombPos =>
+                    _pos.x >= bombPos.x &&
+                    _pos.x < bombPos.x + TILE_WIDTH &&
+                    _pos.y >= bombPos.y &&
+                    _pos.y < bombPos.y + TILE_WIDTH
                 )
                 return isOverlappingCanPassBomb
             }
@@ -53,21 +58,19 @@ export class MapManager {
             return true
         })
     }
-
-    initByMap(mapMetaData: MapMetaData) {
-        const { map, width, height } = mapMetaData
-        const mapMatrix: MapMatrix = Array.from({ length: height }, () => Array(width).fill(null))
+    initByMap(gameMetaData: GameMetaData) {
+        const { originMapMatrix, players } = gameMetaData
+        const h = originMapMatrix.length
+        const w = originMapMatrix[0].length
+        const mapMatrix: MapMatrix = Array.from({ length: h }, () => Array(w).fill(null))
+        this.map = mapMatrix
         const scene = this.scene
         const background = scene.add.renderTexture(0, 0, WINDOW_W, WINDOW_H)
         background.setOrigin(0, 0)
 
-        // Registry players: keyed by manSpriteKey → userId
-        const players: RoomPlayer[] = scene.registry.get("players") ?? []
-        const myUserId: number = scene.registry.get("userId")
-        const playerMap = new Map(players.map(p => [p.manSpriteKey, p.clientId]))
 
-        for (let y = 0; y < map.length; y++) {
-            const row = map[y]
+        for (let y = 0; y < h; y++) {
+            const row = originMapMatrix[y]
             for (let x = 0; x < row.length; x++) {
                 const col = row[x]
                 switch (col) {
@@ -81,18 +84,19 @@ export class MapManager {
                     }
                     case "brick": {
                         const brick = new BaseObj(scene, { y, x }, "items", 4, "brick")
-                        mapMatrix[y][x] = brick
-                        this.bricks.push(brick)
+                        this.setMapTileByIndex({ y, x }, brick)
                         break
                     }
-                    case "man1":
-                    case "man2":
-                    case "man3":
-                    case "man4": {
+                    case ManSpriteKey.Man1:
+                    case ManSpriteKey.Man2:
+                    case ManSpriteKey.Man3:
+                    case ManSpriteKey.Man4: {
                         // Only spawn players that are actually in the game
-                        const userId = playerMap.get(col)
-                        if (userId === undefined) break
-                        const m = new ManObj(scene, { y, x }, col, userId)
+                        const p = players.find(p => p.manSpriteKey === col)
+                        if (!p) {
+                            break
+                        }
+                        const m = new ManObj(scene, { y, x }, col, p.userId)
                         this.playerList.push(m)
                         mapMatrix[y][x] = null  // players don't occupy the map tile
                         break
@@ -102,5 +106,21 @@ export class MapManager {
         }
         this.background = background
         this.map = mapMatrix
+        new FireObj(scene, {
+            centerX:2,
+            centerY:4,
+            verticalStart:2,
+            verticalEnd:3,
+            horizontalEnd:2,
+            horizontalStart:4
+        })
+        new FireObj(scene, {
+            centerX:4,
+            centerY:1,
+            verticalStart:2,
+            verticalEnd:3,
+            horizontalEnd:2,
+            horizontalStart:4
+        })
     }
 }

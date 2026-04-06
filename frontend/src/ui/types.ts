@@ -24,7 +24,9 @@ export interface RoomDetail {
     mapId: number
 }
 
-export interface MapData {
+export interface MapPickData {
     id: number
     name: string
 }
+
+export type MapData = MapPickData

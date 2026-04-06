@@ -1,9 +1,9 @@
 import { wsEmitter } from "../websocket";
 import { UIEventMap, WsEventMap } from "../websocket/eventMap";
 import { MAPS, MAP_UI_META } from "./constants";
-import type { MapData } from "./types";
+import { MapPickData } from "./types";
 
-export const mapById = (id: number): MapData =>
+export const mapById = (id: number): MapPickData =>
   MAPS.find(m => m.id === id) ?? MAPS[0];
 
 export const mapUiById = (id: number) =>

@@ -1,17 +1,10 @@
 import { BaseObj } from "./objects/base"
+import { ManSpriteKey } from "./sprite_animations/sprite"
 
-export type ObjType = "man" | "bomb" | "brick" | "wall" | "item"
-export enum a{
-    A,V
-}
-export interface MapData {
-    w: number,
-    h: number,
-    game_end_max_minute: number,
-    matrix: ("man1" | "man2" | "man3" | "man4" | "brick" | "wall" | null)[][]
-}
-export type MapTile = null | BaseObj | "wall"
+export type ObjType = "man" | "bomb" | "brick" | "wall" | "item" | "fire"
 export type MapTileType = 'empty' | ObjType
+export type OriginMapMatrix =(ManSpriteKey| "brick" | "wall" | null)[][]
+export type MapTile = null | BaseObj | "wall"
 export type MapMatrix = MapTile[][]
 export type ManDirection = "up" | "left" | "down" | "right"
 export type PressedDir = ManDirection | null
@@ -21,4 +14,20 @@ export interface Position {
 }
 export interface MapIndex {
     y: number, x: number
+}
+export interface GameState{
+    players:{
+        manSpriteKey:ManSpriteKey,
+        name:string,
+        isSelf:boolean
+    }[],
+    gameEndTime:number,
+    originMapMatrix:OriginMapMatrix
+}
+
+export interface CountdownMapIndex{
+    y:number,
+    x:number,
+    remainingMs:number
+    manSpriteKey?: ManSpriteKey
 }

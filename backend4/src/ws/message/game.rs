@@ -132,3 +132,31 @@ pub struct ItemEatenPayload {
 pub fn make_ws_msg_item_eaten(payload: &ItemEatenPayload) -> String {
     super::make_ws_msg("itemEaten", payload)
 }
+
+#[derive(Debug, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct GameStateChangedPayload {
+    pub player_moves: Vec<PlayerMovePayload>,
+    pub new_bombs: Vec<GenerateBombPayload>,
+    pub bomb_explosions: Vec<BombExplodePayload>,
+    pub new_items: Vec<CreateItemPayload>,
+    pub player_deaths: Vec<PlayerDiePayload>,
+    pub items_eaten: Vec<ItemEatenPayload>,
+    pub game_over: Option<GameOverPayload>,
+}
+
+impl GameStateChangedPayload {
+    pub fn is_empty(&self) -> bool {
+        self.player_moves.is_empty()
+            && self.new_bombs.is_empty()
+            && self.bomb_explosions.is_empty()
+            && self.new_items.is_empty()
+            && self.player_deaths.is_empty()
+            && self.items_eaten.is_empty()
+            && self.game_over.is_none()
+    }
+}
+
+pub fn make_ws_msg_game_state_changed(payload: &GameStateChangedPayload) -> String {
+    super::make_ws_msg("gameStateChanged", payload)
+}

@@ -24,7 +24,7 @@ export class InputManager {
         return null
     }
 
-    isBombPressed(): boolean {
+    isBombButtonPressed(): boolean {
         return Phaser.Input.Keyboard.JustDown(this.bombKey)
     }
     
