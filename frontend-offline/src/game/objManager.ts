@@ -3,7 +3,7 @@ import { MapIndex, Position, PressedDir } from "./types";
 import { TILE_WIDTH } from "./gameConfig";
 import { ManObj } from "./objects/man";
 import { BombObj } from "./objects/bomb";
-import { FireObj } from "./objects/fire";
+import { FireObj, FireObjConfig } from "./objects/fire";
 import { ItemObj } from "./objects/item";
 import { PlayerMoveEventPayload, BombExplode, CreateItem, PlayerDie, GenerateBombEvent, RemoveItem, ItemType } from "./event/events";
 import { MapManager } from "./mapManager";
@@ -16,7 +16,7 @@ interface ExplodeData {
     explodeBombs: BombObj[],
     ruinBricks: BrickObj[],
     destroyItems: ItemObj[],
-    showFires: FireObj[]
+    showFireConfigs: FireObjConfig[]
 }
 export class ObjManager {
     players: ManObj[] = []
@@ -40,8 +40,11 @@ export class ObjManager {
         this.handleRenderExplodeByData(readyExplodeBombData)
     }
     handleRenderExplodeByData(explodeData: ExplodeData) {
+        for (const fc of explodeData.showFireConfigs) {
+            const fireObj = new FireObj(this.scene, fc)
+            this.fires.push(fireObj)
+        }
         for (const b of explodeData.explodeBombs) {
-
             b.sprite.destroy()
             this.mapManager.cleanMapTileByIndex(b.getMapIndex())
         }
@@ -69,7 +72,7 @@ export class ObjManager {
             explodeBombs: [],
             ruinBricks: [],
             destroyItems: [],
-            showFires: []
+            showFireConfigs: []
         }
 
         // Countdown bombs and collect expired ones
@@ -152,16 +155,15 @@ export class ObjManager {
                 }
             }
 
-            const fire = new FireObj(this.scene, {
+            const fireConfig = {
                 centerX: indexX,
                 centerY: indexY,
                 verticalStart: up,
                 verticalEnd: down,
                 horizontalStart: left,
                 horizontalEnd: right,
-            })
-            result.showFires.push(fire)
-            this.fires.push(fire)
+            }
+            result.showFireConfigs.push(fireConfig)
         }
 
         return result
