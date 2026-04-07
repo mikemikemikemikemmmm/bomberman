@@ -1,6 +1,6 @@
 # Bomberman Offline
 
-本地雙人 Bomberman 遊戲，**不需要後端或網路連線**，直接在瀏覽器中執行。
+本地雙人 Bomberman 遊戲，直接在瀏覽器中執行。
 
 使用 **Phaser 3** 製作遊戲畫面，**Vite + TypeScript** 建置。
 
@@ -10,3 +10,7 @@
 |------|------|--------|
 | 玩家 1 | `W` `A` `S` `D` | `F` |
 | 玩家 2 | `K` `M` `,` `.` | `/` |
+
+## DEMO網址
+
+https://mikemikemikemikemmmm.github.io/bomberman/
