@@ -1,28 +1,18 @@
 import { Scene } from 'phaser';
 import { ObjManager } from './objManager';
-import { loadAllSprites } from './sprite_animations/sprite';
+import { loadAllSprites, ManSpriteKey } from './sprite_animations/sprite';
 import { createAllAnims } from './sprite_animations/animations';
 import { SCENE_MAP } from './gameConfig';
 import { InputManager } from './inputManager';
-import { EventManager } from './event/eventManager';
-import { TimeSyncManager } from './timeSyncManager';
-import { useGlobalStore } from '../store';
-import { TimerUIScene } from './uiScenes/timerUI';
 import { MapManager } from './mapManager';
-import { wsEmitter } from '../websocket';
-
 
 export class PlayingScene extends Scene {
     mapManager: MapManager
     objManager: ObjManager
     inputManager: InputManager
-    eventManager: EventManager
-    timeSyncManager: TimeSyncManager
-    private lastRenderTimeMs = 0
     private gameActive = false
-    private isAlive = true
     private gameEndTime: number
-
+    hasLoadedAssets = false
     constructor() {
         super(SCENE_MAP.PLAYING);
     }
@@ -31,14 +21,14 @@ export class PlayingScene extends Scene {
         loadAllSprites(this)
     }
     async create() {
-        createAllAnims(this)
-        const gameMetaData = useGlobalStore.getState().gameMetaData
-        if (!gameMetaData) {
-            throw Error("error")
+        if (!this.hasLoadedAssets) {
+            createAllAnims(this)
+            this.hasLoadedAssets = true
+
         }
         this.inputManager = new InputManager(this.input)
-        this.objManager = new ObjManager(this, gameMetaData)
-        this.eventManager = new EventManager(this.objManager)
+        this.objManager = new ObjManager(this)
+        // this.eventManager = new EventManager(this.objManager)
 
 
         // this.timeSyncManager = new TimeSyncManager(
@@ -47,68 +37,69 @@ export class PlayingScene extends Scene {
         //     () => this.gameEndTime,
         //     (t) => { this.gameEndTime = t },
         // )
-        this.activateGame()
+        // this.activateGame()
 
         this.scene.launch(SCENE_MAP.COUNT_DOWN, {
             onComplete: () => {
                 this.activateGame()
-                this.scene.launch(SCENE_MAP.TIMER)
+                // this.scene.launch(SCENE_MAP.TIMER)
             }
         })
     }
 
-    private getTimerUiScene(): TimerUIScene | null {
-        return this.scene.get(SCENE_MAP.TIMER) as TimerUIScene | null
+    checkGameOver() {
+        const alivePlayers = this.objManager.players.filter(p => p.isAlive)
+        if (alivePlayers.length > 1) return
+        this.endGame()
+        const winner = alivePlayers[0]?.manSpriteKey ?? null
+        this.scene.launch(SCENE_MAP.GAME_OVER, {
+            winner,
+            onRestart: () => this.scene.restart(),
+        })
     }
-    update(gameTotalTimeMs: number, _delta: number): void {
-        if (this.gameActive) {
-            this.getTimerUiScene()?.setTimer(Math.max(0, this.gameEndTime - Date.now()))
-        }
+    update(_: number, delta: number): void {
+        // if (this.gameActive) {
+        //     this.getTimerUiScene()?.setTimer(Math.max(0, this.gameEndTime - Date.now()))
+        // }
         if (!this.gameActive) return
-        this.objManager.handleCountdownObjTime(_delta)
-        this.handleRenderGameFrame()
-        this.lastRenderTimeMs = gameTotalTimeMs
+        // this.eventManager.consumeStateChangeEvent()
+        this.handleKeyboard(ManSpriteKey.Man1)
+        this.handleKeyboard(ManSpriteKey.Man2)
+        this.objManager.handleCountdownObjTime(delta)
+        this.objManager.checkPlayerDie()
+        this.objManager.checkPlayerEatItem()
+        this.checkGameOver()
+
     }
 
-    handleRenderGameFrame() {
-        this.eventManager.consumeStateChangeEvent()
-        const selfPlayerObj = this.objManager.players.find(p => p.isSelf)
-        if (!selfPlayerObj) {
-            if (this.isAlive) {
-                this.isAlive = false
-                this.getTimerUiScene()?.showSpectating()
-            }
+    handleKeyboard(manSpriteKey: ManSpriteKey) {
+        const playobj = this.objManager.players.find(p => p.manSpriteKey === manSpriteKey)
+        if (!playobj || !playobj.isAlive) {
             return
         }
-        const pressedDir = this.inputManager.getDirectionPressed()
+        const pressedDir = this.inputManager.getDirectionPressed(manSpriteKey)
         if (pressedDir) {
-            const successPayload = this.objManager.handleSelfPositionChange(selfPlayerObj, pressedDir)
-            if (successPayload) {
-                wsEmitter.sendEventToServer("playerMove", successPayload as never)
-            }
+            this.objManager.handleSelfPositionChange(playobj, pressedDir)
         } else {
-            selfPlayerObj.sprite.anims.stop()
+            playobj.sprite.anims.stop()
         }
-        if (this.inputManager.isBombButtonPressed()) {
-            const successPayload = this.objManager.handleSelfPlaceBomb(selfPlayerObj)
-            if (successPayload) {
-                wsEmitter.sendEventToServer("generateBomb", successPayload as never)
-            }
+        if (this.inputManager.isBombButtonPressed(manSpriteKey)) {
+            this.objManager.handlePlaceBomb(playobj)
         }
     }
 
     private endGame() {
         this.gameActive = false
-        this.scene.stop(SCENE_MAP.TIMER)
+        // this.scene.stop(SCENE_MAP.TIMER)
     }
 
 
-    shutdown() {
-        this.timeSyncManager?.destroy()
-        this.eventManager?.destroy()
-        this.scene.stop(SCENE_MAP.COUNT_DOWN)
-        this.scene.stop(SCENE_MAP.TIMER)
-    }
+    // shutdown() {
+    // this.timeSyncManager?.destroy()
+    // this.eventManager?.destroy()
+    // this.scene.stop(SCENE_MAP.COUNT_DOWN)
+    // this.scene.stop(SCENE_MAP.TIMER)
+    // }
 
     activateGame() {
         this.gameActive = true

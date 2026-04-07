@@ -1,19 +1,24 @@
 import { TILE_WIDTH, WINDOW_H, WINDOW_W } from "./gameConfig";
-import { BaseObj } from "./objects/base";
 import { ManObj } from "./objects/man";
-import { MapMatrix, MapTile, Position, MapTileType, MapIndex } from "./types";
+import { MapMatrix, MapTile, Position, MapTileType, MapIndex, OriginMapMatrix } from "./types";
 import { tranPositionToIndex } from "./utils";
 import { ManSpriteKey } from "./sprite_animations/sprite";
-import { GameMetaData } from "../store";
-import { FireObj } from "./objects/fire";
 import { BrickObj } from "./objects/brick";
+import { useGlobalStore } from "../store";
+import { ALL_MAP } from "../mapData";
 
 export class MapManager {
     background: Phaser.GameObjects.RenderTexture
     map!: MapMatrix
 
-    constructor(private scene: Phaser.Scene, gameMetaData: GameMetaData, private playerList: ManObj[]) {
-        this.initByMap(gameMetaData)
+    constructor(private scene: Phaser.Scene, private playerList: ManObj[]) {
+        const mapId = useGlobalStore.getState().mapId
+        const targetMap = ALL_MAP.find(m => m.id === mapId)
+        if (!targetMap) {
+            throw Error("no map")
+        }
+
+        this.initByMap(targetMap.matrix)
     }
     cleanMapTileByIndex(index: MapIndex) {
         this.map[index.indexY][index.indexX] = null
@@ -57,10 +62,9 @@ export class MapManager {
             return true
         })
     }
-    initByMap(gameMetaData: GameMetaData) {
-        const { originMapMatrix, players } = gameMetaData
-        const h = originMapMatrix.length
-        const w = originMapMatrix[0].length
+    initByMap(matrix: OriginMapMatrix) {
+        const h = matrix.length
+        const w = matrix[0].length
         const mapMatrix: MapMatrix = Array.from({ length: h }, () => Array(w).fill(null))
         this.map = mapMatrix
         const scene = this.scene
@@ -69,7 +73,7 @@ export class MapManager {
 
 
         for (let y = 0; y < h; y++) {
-            const row = originMapMatrix[y]
+            const row = matrix[y]
             for (let x = 0; x < row.length; x++) {
                 const col = row[x]
                 switch (col) {
@@ -87,15 +91,9 @@ export class MapManager {
                         break
                     }
                     case ManSpriteKey.Man1:
-                    case ManSpriteKey.Man2:
-                    case ManSpriteKey.Man3:
-                    case ManSpriteKey.Man4: {
+                    case ManSpriteKey.Man2: {
                         // Only spawn players that are actually in the game
-                        const p = players.find(p => p.manSpriteKey === col)
-                        if (!p) {
-                            break
-                        }
-                        const m = new ManObj(scene, { indexY: y, indexX: x }, col, p.userId)
+                        const m = new ManObj(scene, { indexY: y, indexX: x }, col, 1)
                         this.playerList.push(m)
                         mapMatrix[y][x] = null  // players don't occupy the map tile
                         break
@@ -105,21 +103,5 @@ export class MapManager {
         }
         this.background = background
         this.map = mapMatrix
-        // new FireObj(scene, {
-        //     centerX:2,
-        //     centerY:4,
-        //     verticalStart:2,
-        //     verticalEnd:3,
-        //     horizontalEnd:2,
-        //     horizontalStart:4
-        // })
-        // new FireObj(scene, {
-        //     centerX:4,
-        //     centerY:1,
-        //     verticalStart:2,
-        //     verticalEnd:3,
-        //     horizontalEnd:2,
-        //     horizontalStart:4
-        // })
     }
 }

@@ -5,11 +5,10 @@ import { ManObj } from "./objects/man";
 import { BombObj } from "./objects/bomb";
 import { FireObj } from "./objects/fire";
 import { ItemObj } from "./objects/item";
-import { PlayerMoveEventPayload, BombExplode, CreateItem, PlayerDie, GenerateBombEvent, RemoveItem } from "./event/events";
+import { PlayerMoveEventPayload, BombExplode, CreateItem, PlayerDie, GenerateBombEvent, RemoveItem, ItemType } from "./event/events";
 import { MapManager } from "./mapManager";
 import { tranIndexToPosition } from "./utils";
 import { ANIMS } from "./sprite_animations/animations";
-import { GameMetaData } from "../store";
 import { BrickObj } from "./objects/brick";
 
 
@@ -20,8 +19,8 @@ export class ObjManager {
     bombs: BombObj[] = []
     fires: FireObj[] = []
     ruiningBricks: BrickObj[] = []
-    constructor(private scene: Scene, gameMetaData: GameMetaData) {
-        this.mapManager = new MapManager(scene, gameMetaData, this.players)
+    constructor(private scene: Scene) {
+        this.mapManager = new MapManager(scene, this.players)
     }
     handleCountdownObjTime(passMs: number) {
         this.fires = this.fires.filter(fire => {
@@ -47,7 +46,7 @@ export class ObjManager {
             const tile = this.mapManager.getMapTileByIndex({ indexY, indexX })
             if (tile && tile !== 'wall' && tile.getObjType() === 'bomb') {
                 const cells = this.computeExplosionCells({ indexY, indexX }, b.power)
-                this.handleBombExplodeEventFromServer({ x: indexX, y: indexY, cells: cells.map(c => ({ x: c.indexX, y: c.indexY })) })
+                this.handleBombExplodeEvent({ x: indexX, y: indexY, cells: cells.map(c => ({ x: c.indexX, y: c.indexY })) })
             }
         }
     }
@@ -66,7 +65,6 @@ export class ObjManager {
         }
         return cells
     }
-    ///by self
     handleSelfPositionChange(selfManObj: ManObj, pressedDir: PressedDir) {
         const speed = selfManObj.speed
         const prevX = selfManObj.sprite.x
@@ -137,7 +135,103 @@ export class ObjManager {
             return null
         }
     }
-
+    // handleSelfPositionChange(selfManObj: ManObj, pressedDir: PressedDir) {
+    //     const speed = selfManObj.speed
+    //     const prevX = selfManObj.sprite.x
+    //     const prevY = selfManObj.sprite.y
+    //     const currDir = selfManObj.dir
+    //     selfManObj.setDir(pressedDir || currDir)
+    //     selfManObj.setMoving(!!pressedDir)
+    //     let targetX = prevX
+    //     let targetY = prevY
+    //     if (pressedDir === "up") targetY -= speed
+    //     if (pressedDir === "down") targetY += speed
+    //     if (pressedDir === "left") targetX -= speed
+    //     if (pressedDir === "right") targetX += speed
+    //     const isSameDir = currDir === pressedDir
+    //     console.log(targetX, targetY)
+    //     const canMove = this.mapManager.canManMoveByPosition({ posX: targetX, posY: targetY }, selfManObj)
+    //     let finalX = prevX
+    //     let finalY = prevY
+    //     if (!canMove && isSameDir) {
+    //         if (currDir === "right") {
+    //             const isTouchWall = prevX % TILE_WIDTH === 0
+    //             if (!isTouchWall) {
+    //                 const dx = TILE_WIDTH - prevX % TILE_WIDTH
+    //                 finalY = prevY
+    //                 finalX = prevX + dx
+    //             }
+    //         } else if (currDir === "down") {
+    //             const isTouchWall = prevY % TILE_WIDTH === 0
+    //             if (!isTouchWall) {
+    //                 const dy = TILE_WIDTH - prevY % TILE_WIDTH
+    //                 finalY = prevY + dy
+    //                 finalX = prevX
+    //             }
+    //         } else if (currDir === 'left') {
+    //             const isTouchWall = prevX % TILE_WIDTH === 0
+    //             if (!isTouchWall) {
+    //                 const dx = prevX % TILE_WIDTH
+    //                 finalY = prevY
+    //                 finalX = prevX - dx
+    //             }
+    //         } else if (currDir === 'up') {
+    //             const isTouchWall = prevY % TILE_WIDTH === 0
+    //             if (!isTouchWall) {
+    //                 const dy = prevY % TILE_WIDTH
+    //                 finalY = prevY - dy
+    //                 finalX = prevX
+    //             }
+    //         }
+    //     } else if (!canMove) {
+    //         if (currDir === "right") {
+    //             const dx = TILE_WIDTH - prevX % TILE_WIDTH
+    //             const diff = speed - dx
+    //             finalY = prevY + (pressedDir === 'down' ? diff : -diff)
+    //             finalX = prevX + dx
+    //             const nextPosCanMove = this.mapManager.canManMoveByPosition({ posX: finalX, posY: finalY }, selfManObj)
+    //             if (!nextPosCanMove) return
+    //         } else if (currDir === "left") {
+    //             const dx = prevX % TILE_WIDTH
+    //             const diff = speed - dx
+    //             finalY = prevY + (pressedDir === 'down' ? diff : -diff)
+    //             finalX = prevX - dx
+    //             const nextPosCanMove = this.mapManager.canManMoveByPosition({ posX: finalX, posY: finalY }, selfManObj)
+    //             if (!nextPosCanMove) return
+    //         } else if (currDir === "down") {
+    //             const dy = TILE_WIDTH - prevY % TILE_WIDTH
+    //             const diff = speed - dy
+    //             finalX = prevX + (pressedDir === 'right' ? diff : -diff)
+    //             finalY = prevY + dy
+    //             const nextPosCanMove = this.mapManager.canManMoveByPosition({ posX: finalX, posY: finalY }, selfManObj)
+    //             if (!nextPosCanMove) return
+    //         } else if (currDir === "up") {
+    //             const dy = prevY % TILE_WIDTH
+    //             const diff = speed - dy
+    //             finalX = prevX + (pressedDir === 'right' ? diff : -diff)
+    //             finalY = prevY - dy
+    //             const nextPosCanMove = this.mapManager.canManMoveByPosition({ posX: finalX, posY: finalY }, selfManObj)
+    //             if (!nextPosCanMove) return
+    //         }
+    //     } else {
+    //         finalX = targetX
+    //         finalY = targetY
+    //     }
+    //     this.handleCanPassBomb(selfManObj, { posY: finalY, posX: finalX })
+    //     const eventPayloadToServer = {
+    //         manKey: selfManObj.manSpriteKey,
+    //         newX: finalX,
+    //         newY: finalY,
+    //         dir: pressedDir || currDir,
+    //         isMoving: !!pressedDir,
+    //     }
+    //     selfManObj.sprite.setPosition(finalX, finalY)
+    //     if (canMove) {
+    //         return eventPayloadToServer
+    //     } else {
+    //         return null
+    //     }
+    // }
     handleCanPassBomb(manObj: ManObj, finalManPos: Position) {
         manObj.canPassBombPosList = manObj.canPassBombPosList.filter(bombP => {
             const dx = Math.abs(bombP.posX - finalManPos.posX)
@@ -146,7 +240,7 @@ export class ObjManager {
         })
     }
 
-    handleSelfPlaceBomb(playerObj: ManObj) {
+    handlePlaceBomb(playerObj: ManObj) {
         if (playerObj.usedBombNum >= playerObj.bombNum) {
             return null
         }
@@ -168,29 +262,7 @@ export class ObjManager {
         return payload
     }
 
-    ///by server
-    handlePlayerMoveEventFromServer(playerMoveEventPayload: PlayerMoveEventPayload) {
-        const selfMan = this.players.find(p => p.isSelf)
-        if (selfMan) return
-        const { newX, newY, dir, isMoving, manKey } = playerMoveEventPayload
-        const targetMan = this.players.find(p => p.manSpriteKey === manKey)
-        if (!targetMan) {
-            return
-        }
-        targetMan.sprite.setPosition(newX, newY)
-        targetMan.setDir(dir)
-        targetMan.setMoving(isMoving)
-    }
-    handleGenerateBombEventFromServer(payload: GenerateBombEvent["payload"]) {
-        const index: MapIndex = { indexX: payload.x, indexY: payload.y }
-        const targetTileType = this.mapManager.getMapTileTypeByIndex(index)
-        if (targetTileType === "empty" || targetTileType === "item") {
-            const bomb = new BombObj(this.scene, index, payload.bombPower, payload.manSpriteKey)
-            this.mapManager.setMapTileByIndex(index, bomb)
-            this.bombs.push(bomb)
-        }
-    }
-    handleBombExplodeEventFromServer(payload: BombExplode["payload"]) {
+    handleBombExplodeEvent(payload: BombExplode["payload"]) {
         const originIndex: MapIndex = { indexX: payload.x, indexY: payload.y }
         const bombTile = this.mapManager.getMapTileByIndex(originIndex)
         if (!bombTile || bombTile === "wall" || bombTile.type !== "bomb") return
@@ -213,9 +285,14 @@ export class ObjManager {
             const tile = this.mapManager.getMapTileByIndex(cellIndex)
             if (tileType === "brick" && tile && tile !== "wall") {
                 const brick = tile as BrickObj
-                brick.triggerRuin(i =>
-                    this.handleCreateItemEventFromServer({ itemType: "speed", x: i.indexX, y: i.indexY })
-                )
+                brick.triggerRuin(i => {
+                    const randomInt = Math.floor(Math.random() * 5);
+                    const items = ["speed", "moreBomb", "fire"] as ItemType[]
+                    if (randomInt <= 2) {
+                        const index = Math.floor(Math.random() * items.length);
+                        this.handleCreateItemEvent({ itemType: items[index], x: i.indexX, y: i.indexY })
+                    }
+                })
                 this.ruiningBricks.push(brick)
                 this.mapManager.setMapTileByIndex(cellIndex, null)
             }
@@ -227,7 +304,7 @@ export class ObjManager {
                 const chainBomb = tile as BombObj
                 const chainIndex = chainBomb.getMapIndex()
                 const chainCells = this.computeExplosionCells(chainIndex, chainBomb.power)
-                this.handleBombExplodeEventFromServer({
+                this.handleBombExplodeEvent({
                     x: chainIndex.indexX,
                     y: chainIndex.indexY,
                     cells: chainCells.map(c => ({ x: c.indexX, y: c.indexY }))
@@ -254,28 +331,83 @@ export class ObjManager {
         this.fires.push(fire)
     }
 
-    handleCreateItemEventFromServer(payload: CreateItem["payload"]) {
+    handleCreateItemEvent(payload: CreateItem["payload"]) {
         const index: MapIndex = { indexX: payload.x, indexY: payload.y }
         const item = new ItemObj(this.scene, index, payload.itemType)
         this.mapManager.setMapTileByIndex(index, item)
     }
 
-    handleRemoveItemEventFromServer(payload: RemoveItem["payload"]) {
-        const index: MapIndex = { indexX: payload.x, indexY: payload.y }
-        const tile = this.mapManager.getMapTileByIndex(index)
-        if (tile && tile !== "wall" && tile.type === "item") {
-            tile.sprite.destroy()
-            this.mapManager.cleanMapTileByIndex(index)
+    checkPlayerDie() {
+        for (const player of this.players) {
+            if (!player.isAlive) continue
+            const playerIndex = player.getCenterMapIndex()
+            const inFire = this.fires.some(fire => {
+                const allSprites = [fire.centerSprite, ...fire.verticalSprites, ...fire.horizontalSprites]
+                return allSprites.some(sprite => {
+                    return sprite.x / TILE_WIDTH === playerIndex.indexX && sprite.y / TILE_WIDTH === playerIndex.indexY
+                })
+            })
+            if (inFire) {
+                player.isAlive = false
+                player.sprite.anims.play(ANIMS[player.manSpriteKey].die)
+                player.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+                    player.sprite.destroy()
+                    this.players = this.players.filter(p => p !== player)
+                })
+            }
         }
     }
-
-    handlePlayerDieEventFromServer(payload: PlayerDie["payload"][number]) {
-        const player = this.players.find(p => p.manSpriteKey === payload.manKey)
-        if (!player) return
-        player.sprite.anims.play(ANIMS[payload.manKey].die)
-        player.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-            player.sprite.destroy()
-            this.players = this.players.filter(p => p.manSpriteKey !== payload.manKey)
-        })
+    checkPlayerEatItem() {
+        for (const player of this.players) {
+            if (!player.isAlive) continue
+            const playerIndex = player.getCenterMapIndex()
+            const tile = this.mapManager.getMapTileByIndex(playerIndex)
+            if (!tile || tile === 'wall' || tile.getObjType() !== 'item') continue
+            const item = tile as ItemObj
+            this.mapManager.cleanMapTileByIndex(playerIndex)
+            item.sprite.destroy()
+            player.eatItem(item.itemType)
+        }
     }
+    ///by server
+    // handlePlayerMoveEvent(playerMoveEventPayload: PlayerMoveEventPayload) {
+    //     const selfMan = this.players.find(p => p.isSelf)
+    //     if (selfMan) return
+    //     const { newX, newY, dir, isMoving, manKey } = playerMoveEventPayload
+    //     const targetMan = this.players.find(p => p.manSpriteKey === manKey)
+    //     if (!targetMan) {
+    //         return
+    //     }
+    //     targetMan.sprite.setPosition(newX, newY)
+    //     targetMan.setDir(dir)
+    //     targetMan.setMoving(isMoving)
+    // }
+    // handleGenerateBombEvent(payload: GenerateBombEvent["payload"]) {
+    //     const index: MapIndex = { indexX: payload.x, indexY: payload.y }
+    //     const targetTileType = this.mapManager.getMapTileTypeByIndex(index)
+    //     if (targetTileType === "empty" || targetTileType === "item") {
+    //         const bomb = new BombObj(this.scene, index, payload.bombPower, payload.manSpriteKey)
+    //         this.mapManager.setMapTileByIndex(index, bomb)
+    //         this.bombs.push(bomb)
+    //     }
+    // }
+
+    // handleRemoveItemEvent(payload: RemoveItem["payload"]) {
+    //     const index: MapIndex = { indexX: payload.x, indexY: payload.y }
+    //     const tile = this.mapManager.getMapTileByIndex(index)
+    //     if (tile && tile !== "wall" && tile.type === "item") {
+    //         tile.sprite.destroy()
+    //         this.mapManager.cleanMapTileByIndex(index)
+    //     }
+    // }
+
+    // handlePlayerDieEvent(payload: PlayerDie["payload"][number]) {
+    //     const player = this.players.find(p => p.manSpriteKey === payload.manKey)
+    //     if (!player) return
+    //     player.sprite.anims.play(ANIMS[payload.manKey].die)
+    //     player.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+    //         player.sprite.destroy()
+    //         this.players = this.players.filter(p => p.manSpriteKey !== payload.manKey)
+    //     })
+    // }
 }

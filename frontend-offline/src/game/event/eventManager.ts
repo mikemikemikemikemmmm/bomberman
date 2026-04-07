@@ -1,4 +1,4 @@
-import { wsEmitter } from "../../websocket"
+// import { wsEmitter } from "../../websocket"
 import { ObjManager } from "../objManager"
 import { GameStateChangeEvent } from "./events"
 
@@ -7,46 +7,45 @@ export class EventManager {
 
     constructor(private objManager: ObjManager) {
         this.handleGameStateChange = this.handleGameStateChange.bind(this)
-        this.initListenGameEventFromServer()
+        // this.initListenGameEvent()
     }
 
     handleGameStateChange(payload: GameStateChangeEvent[]) {
         this.gameStateChangeQueue.push(...payload)
     }
 
-    initListenGameEventFromServer() {
-        wsEmitter.on("gameStateChanged", this.handleGameStateChange as never)
-    }
+    // initListenGameEvent() {
+    //     wsEmitter.on("gameStateChanged", this.handleGameStateChange as never)
+    // }
 
     destroy() {
-        wsEmitter.off("gameStateChanged", this.handleGameStateChange as never)
+        // wsEmitter.off("gameStateChanged", this.handleGameStateChange as never)
         this.gameStateChangeQueue = []
     }
     /////////////////////////////////////////////////
     consumeStateChangeEvent() {
         while (this.gameStateChangeQueue.length !== 0) {
             const event = this.gameStateChangeQueue.shift()
-            console.log("consume",event)
             if (!event) break
             switch (event.type) {
                 case "playerMove":
-                    this.objManager.handlePlayerMoveEventFromServer(event.payload)
+                    this.objManager.handlePlayerMoveEvent(event.payload)
                     break
                 case "generateBomb":
-                    this.objManager.handleGenerateBombEventFromServer(event.payload)
+                    this.objManager.handleGenerateBombEvent(event.payload)
                     break
                 case "bombExplode":
-                    this.objManager.handleBombExplodeEventFromServer(event.payload)
+                    this.objManager.handleBombExplodeEvent(event.payload)
                     break
                 case "createItem":
-                    this.objManager.handleCreateItemEventFromServer(event.payload)
+                    this.objManager.handleCreateItemEvent(event.payload)
                     break
                 case "removeItem":
-                    this.objManager.handleRemoveItemEventFromServer(event.payload)
+                    this.objManager.handleRemoveItemEvent(event.payload)
                     break
                 case "playerDie":
                     for (const p of event.payload) {
-                        this.objManager.handlePlayerDieEventFromServer(p)
+                        this.objManager.handlePlayerDieEvent(p)
                     }
                     break
                 case "gameOver":
