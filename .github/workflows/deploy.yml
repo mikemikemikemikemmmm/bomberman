@@ -1,0 +1,54 @@
+name: Deploy Vite Project
+
+on:
+  push:
+    branches: [ main ] # 如果你的主分支叫 master，請改為 master
+
+# 設定 GITHUB_TOKEN 的權限，允許部署到 GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 避免多個部署同時執行
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          # 如果你的 package-lock.json 在子目錄，可以指定 cache-dependency-path
+          cache: 'npm'
+          cache-dependency-path: './frontend-offline/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd frontend-offline
+          npm install
+
+      - name: Build
+        run: |
+          cd frontend-offline
+          npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # 這是你編譯輸出的正確位置
+          path: './frontend-offline/dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
