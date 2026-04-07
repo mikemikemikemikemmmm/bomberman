@@ -12,6 +12,7 @@ use crate::game::state::game_state::{DestroyingBrick, Fire, GameState, Item};
 use crate::game::types::ItemType;
 use crate::ws::message::{
     BombExplodePayload, CreateItemPayload, GameStateChangedPayload, GridPos, PlayerDiePayload,
+    RemoveItemPayload,
 };
 
 fn now_ms() -> u64 {
@@ -28,7 +29,7 @@ fn now_ms_u128() -> u128 {
         .as_millis()
 }
 
-/// Compute cells affected by an explosion at pixel position (bx, by) with given power.
+/// Compute cells affected by an explosion at tile position (bx, by) with given power.
 /// Mutates the map matrix to mark destroyed bricks as Empty.
 /// Returns (fire_cells_in_tiles, destroyed_brick_tile_positions).
 fn compute_explosion(
@@ -37,21 +38,15 @@ fn compute_explosion(
     by: i32,
     power: u32,
 ) -> (Vec<GridPos>, Vec<(i32, i32)>) {
-    let tile_x = bx / TILE_WIDTH as i32;
-    let tile_y = by / TILE_WIDTH as i32;
-
-    let mut cells = vec![GridPos {
-        x: tile_x,
-        y: tile_y,
-    }];
+    let mut cells = vec![GridPos { x: bx, y: by }];
     let mut destroyed_bricks = vec![];
 
     let directions: [(i32, i32); 4] = [(0, -1), (0, 1), (-1, 0), (1, 0)];
 
     for &(dx, dy) in &directions {
         for dist in 1..=power as i32 {
-            let nx = tile_x + dx * dist;
-            let ny = tile_y + dy * dist;
+            let nx = bx + dx * dist;
+            let ny = by + dy * dist;
 
             if nx < 0 || ny < 0 || nx >= MAP_W as i32 || ny >= MAP_H as i32 {
                 break;
@@ -109,19 +104,11 @@ pub fn process_bombs(gs: &mut GameState, changes: &mut GameStateChangedPayload) 
         let chain_bombs: Vec<(i32, i32, u32)> = gs
             .bombs
             .iter()
-            .filter(|b| {
-                let btx = b.x / TILE_WIDTH as i32;
-                let bty = b.y / TILE_WIDTH as i32;
-                cells.iter().any(|c| c.x == btx && c.y == bty)
-            })
+            .filter(|b| cells.iter().any(|c| c.x == b.x && c.y == b.y))
             .map(|b| (b.x, b.y, b.power))
             .collect();
 
-        gs.bombs.retain(|b| {
-            let btx = b.x / TILE_WIDTH as i32;
-            let bty = b.y / TILE_WIDTH as i32;
-            !cells.iter().any(|c| c.x == btx && c.y == bty)
-        });
+        gs.bombs.retain(|b| !cells.iter().any(|c| c.x == b.x && c.y == b.y));
 
         for chain in chain_bombs {
             explode_queue.push_back(chain);
@@ -135,6 +122,16 @@ pub fn process_bombs(gs: &mut GameState, changes: &mut GameStateChangedPayload) 
                 end_time: fire_end,
             });
         }
+
+        // Remove items in the blast area
+        let removed: Vec<(i32, i32)> = gs.items.iter()
+            .filter(|item| cells.iter().any(|c| c.x == item.x && c.y == item.y))
+            .map(|item| (item.x, item.y))
+            .collect();
+        for &(rx, ry) in &removed {
+            changes.removed_items.push(RemoveItemPayload { x: rx, y: ry });
+        }
+        gs.items.retain(|item| !cells.iter().any(|c| c.x == item.x && c.y == item.y));
 
         // Animate destroyed bricks and maybe spawn items
         for &(dbx, dby) in &destroyed_bricks {
@@ -150,16 +147,14 @@ pub fn process_bombs(gs: &mut GameState, changes: &mut GameStateChangedPayload) 
                     1 => ItemType::Speed,
                     _ => ItemType::MoreBomb,
                 };
-                let item_px = dbx * TILE_WIDTH as i32;
-                let item_py = dby * TILE_WIDTH as i32;
                 gs.items.push(Item {
-                    x: item_px,
-                    y: item_py,
+                    x: dbx,
+                    y: dby,
                     item_type: item_type.clone(),
                 });
                 changes.new_items.push(CreateItemPayload {
-                    x: item_px,
-                    y: item_py,
+                    x: dbx,
+                    y: dby,
                     item_type,
                 });
             }

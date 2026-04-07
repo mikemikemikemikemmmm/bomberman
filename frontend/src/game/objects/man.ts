@@ -1,9 +1,8 @@
 import { useGlobalStore } from "../../store";
-import { PlayerMoveEventPayload } from "../event/events";
+import { BASE_MAN_SPEED } from "../gameConfig";
 import { ManSpriteKey } from "../sprite_animations/sprite";
 import { ManDirection, MapIndex, Position } from "../types";
 import { BaseObj } from "./base";
-import { BombObj } from "./bomb";
 
 export class ManObj extends BaseObj {
     // 自訂屬性
@@ -11,9 +10,10 @@ export class ManObj extends BaseObj {
     manSpriteKey: ManSpriteKey
     dir: ManDirection = "down"
     isMoving: boolean = false
-    speed = 1
+    usedBombNum: number = 0
+    speed = BASE_MAN_SPEED
     bombNum = 10
-    bombPower = 1
+    bombPower = 2
     canPassBombPosList: Position[] = []
     constructor(scene: Phaser.Scene, index: MapIndex, manSpriteKey: ManSpriteKey, userId: number) {
         super(scene, index, manSpriteKey, 5, "man");

@@ -1,13 +1,12 @@
 import { TILE_WIDTH, WINDOW_H, WINDOW_W } from "./gameConfig";
 import { BaseObj } from "./objects/base";
 import { ManObj } from "./objects/man";
-import { MapMatrix, MapTile, Position, MapTileType, MapIndex, OriginMapMatrix, CountdownMapIndex } from "./types";
+import { MapMatrix, MapTile, Position, MapTileType, MapIndex } from "./types";
 import { tranPositionToIndex } from "./utils";
-import type { RoomPlayer } from "../ui/types";
 import { ManSpriteKey } from "./sprite_animations/sprite";
-import { ObjManager } from "./objManager";
 import { GameMetaData } from "../store";
 import { FireObj } from "./objects/fire";
+import { BrickObj } from "./objects/brick";
 
 export class MapManager {
     background: Phaser.GameObjects.RenderTexture
@@ -16,41 +15,41 @@ export class MapManager {
     constructor(private scene: Phaser.Scene, gameMetaData: GameMetaData, private playerList: ManObj[]) {
         this.initByMap(gameMetaData)
     }
-    cleanMapTileByIndex(index: { x: number, y: number }) {
-        this.map[index.y][index.x] = null
+    cleanMapTileByIndex(index: MapIndex) {
+        this.map[index.indexY][index.indexX] = null
     }
-    setMapTileByIndex(index: { x: number, y: number }, obj: MapTile) {
-        this.map[index.y][index.x] = obj
+    setMapTileByIndex(index: MapIndex, obj: MapTile) {
+        this.map[index.indexY][index.indexX] = obj
     }
-    isTileEmpty(index: { x: number, y: number }) {
-        return this.map[index.y][index.x] === null
+    isTileEmpty(index: MapIndex) {
+        return this.map[index.indexY][index.indexX] === null
     }
-    getMapTileByIndex(pos: { x: number, y: number }) {
-        return this.map[pos.y][pos.x]
+    getMapTileByIndex(pos: MapIndex) {
+        return this.map[pos.indexY][pos.indexX]
     }
-    getMapTileTypeByIndex(pos: { x: number, y: number }): MapTileType {
-        const tile = this.map[pos.y][pos.x]
+    getMapTileTypeByIndex(pos: MapIndex): MapTileType {
+        const tile = this.map[pos.indexY][pos.indexX]
         if (!tile) return "empty"
         if (tile === 'wall') return 'wall'
         return tile.getObjType()
     }
     canManMoveByPosition(pos: Position, manObj: ManObj) {
         //tile width would cover to next tile , need to  -1
-        const fourPoint = [
-            { x: pos.x, y: pos.y },
-            { x: pos.x + TILE_WIDTH - 1, y: pos.y },
-            { x: pos.x, y: pos.y + TILE_WIDTH - 1 },
-            { x: pos.x + TILE_WIDTH - 1, y: pos.y + TILE_WIDTH - 1 },
+        const fourPoint: Position[] = [
+            { posX: pos.posX, posY: pos.posY },
+            { posX: pos.posX + TILE_WIDTH - 1, posY: pos.posY },
+            { posX: pos.posX, posY: pos.posY + TILE_WIDTH - 1 },
+            { posX: pos.posX + TILE_WIDTH - 1, posY: pos.posY + TILE_WIDTH - 1 },
         ]
         return fourPoint.every(_pos => {
             const mapIndex = tranPositionToIndex(_pos)
             const mapTileType = this.getMapTileTypeByIndex(mapIndex)
             if (mapTileType === "bomb") {
                 const isOverlappingCanPassBomb = manObj.canPassBombPosList.some(bombPos =>
-                    _pos.x >= bombPos.x &&
-                    _pos.x < bombPos.x + TILE_WIDTH &&
-                    _pos.y >= bombPos.y &&
-                    _pos.y < bombPos.y + TILE_WIDTH
+                    _pos.posX >= bombPos.posX &&
+                    _pos.posX < bombPos.posX + TILE_WIDTH &&
+                    _pos.posY >= bombPos.posY &&
+                    _pos.posY < bombPos.posY + TILE_WIDTH
                 )
                 return isOverlappingCanPassBomb
             }
@@ -83,8 +82,8 @@ export class MapManager {
                         break
                     }
                     case "brick": {
-                        const brick = new BaseObj(scene, { y, x }, "items", 4, "brick")
-                        this.setMapTileByIndex({ y, x }, brick)
+                        const brick = new BrickObj(scene, { indexY: y, indexX: x })
+                        this.setMapTileByIndex({ indexY: y, indexX: x }, brick)
                         break
                     }
                     case ManSpriteKey.Man1:
@@ -96,7 +95,7 @@ export class MapManager {
                         if (!p) {
                             break
                         }
-                        const m = new ManObj(scene, { y, x }, col, p.userId)
+                        const m = new ManObj(scene, { indexY: y, indexX: x }, col, p.userId)
                         this.playerList.push(m)
                         mapMatrix[y][x] = null  // players don't occupy the map tile
                         break
@@ -106,21 +105,21 @@ export class MapManager {
         }
         this.background = background
         this.map = mapMatrix
-        new FireObj(scene, {
-            centerX:2,
-            centerY:4,
-            verticalStart:2,
-            verticalEnd:3,
-            horizontalEnd:2,
-            horizontalStart:4
-        })
-        new FireObj(scene, {
-            centerX:4,
-            centerY:1,
-            verticalStart:2,
-            verticalEnd:3,
-            horizontalEnd:2,
-            horizontalStart:4
-        })
+        // new FireObj(scene, {
+        //     centerX:2,
+        //     centerY:4,
+        //     verticalStart:2,
+        //     verticalEnd:3,
+        //     horizontalEnd:2,
+        //     horizontalStart:4
+        // })
+        // new FireObj(scene, {
+        //     centerX:4,
+        //     centerY:1,
+        //     verticalStart:2,
+        //     verticalEnd:3,
+        //     horizontalEnd:2,
+        //     horizontalStart:4
+        // })
     }
 }

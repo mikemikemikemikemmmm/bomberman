@@ -1,4 +1,4 @@
-import { COINTDOWN_MS, TILE_WIDTH } from "../gameConfig";
+import {  COUNTDOWN_MS, TILE_WIDTH } from "../gameConfig";
 import { ANIMS } from "../sprite_animations/animations";
 import { ObjType } from "../types";
 interface FireObjConfig {
@@ -15,7 +15,7 @@ export class FireObj {
     verticalSprites: Phaser.GameObjects.Sprite[]
     horizontalSprites: Phaser.GameObjects.Sprite[]
     centerSprite: Phaser.GameObjects.Sprite
-    remainingMs:number = COINTDOWN_MS.fire
+    remainingMs:number = COUNTDOWN_MS.fire
 
     constructor(
         scene: Phaser.Scene,

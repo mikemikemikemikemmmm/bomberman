@@ -1,5 +1,5 @@
 import { ManDirection } from "../types"
-import type { ManSpriteKey } from "../sprite_animations/sprite"
+import type { ManSpriteKey, SpriteKey } from "../sprite_animations/sprite"
 export type ItemType = "fire" | "speed" | "moreBomb"
 export interface PlayerMoveEventPayload {
     manKey: ManSpriteKey
@@ -19,6 +19,7 @@ export interface GenerateBombEvent {
         x: number
         y: number
         bombPower: number
+        manSpriteKey: ManSpriteKey
     }
 }
 
@@ -27,8 +28,8 @@ export interface BombExplode {
     payload: {
         x: number
         y: number
-        manSpriteKey: ManSpriteKey,
         cells: { x: number; y: number }[]
+        brickCells?: { x: number; y: number }[]
     }
 }
 

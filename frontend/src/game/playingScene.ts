@@ -2,7 +2,7 @@ import { Scene } from 'phaser';
 import { ObjManager } from './objManager';
 import { loadAllSprites } from './sprite_animations/sprite';
 import { createAllAnims } from './sprite_animations/animations';
-import {  SCENE_MAP } from './gameConfig';
+import { SCENE_MAP } from './gameConfig';
 import { InputManager } from './inputManager';
 import { EventManager } from './event/eventManager';
 import { TimeSyncManager } from './timeSyncManager';
@@ -49,12 +49,12 @@ export class PlayingScene extends Scene {
         // )
         this.activateGame()
 
-        // this.scene.launch(SCENE_MAP.COUNT_DOWN, {
-        //     onComplete: () => {
-        //         this.activateGame()
-        //         this.scene.launch(SCENE_MAP.TIMER)
-        //     }
-        // })
+        this.scene.launch(SCENE_MAP.COUNT_DOWN, {
+            onComplete: () => {
+                this.activateGame()
+                this.scene.launch(SCENE_MAP.TIMER)
+            }
+        })
     }
 
     private getTimerUiScene(): TimerUIScene | null {

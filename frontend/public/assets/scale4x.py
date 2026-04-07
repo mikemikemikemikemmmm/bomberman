@@ -1,19 +1,19 @@
 import os
 from PIL import Image
 
-def batch_upscale(scale_factor=4):
+def batch_upscale(scale_factor):
     # 取得當前執行腳本的目錄
     current_dir = os.getcwd()
     
     # 遍歷資料夾中的所有檔案
     for filename in os.listdir(current_dir):
         # 檢查是否為 PNG 且不是已經處理過的檔案
-        if filename.lower().endswith("explosion.png") and not filename.endswith("_4x.png"):
+        if filename.lower().endswith(".png") and not filename.endswith("_3x.png"):
             input_path = os.path.join(current_dir, filename)
             
             # 建立新檔名：原檔名 + _4x.png
             name_part, _ = os.path.splitext(filename)
-            output_filename = f"{name_part}_4x.png"
+            output_filename = f"{name_part}_3x.png"
             output_path = os.path.join(current_dir, output_filename)
             
             try:
@@ -35,5 +35,5 @@ def batch_upscale(scale_factor=4):
 
 if __name__ == "__main__":
     print("開始批次放大像素圖片...")
-    batch_upscale(4)
+    batch_upscale(3)
     print("全部完成！")

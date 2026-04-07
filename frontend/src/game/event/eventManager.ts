@@ -1,7 +1,5 @@
 import { wsEmitter } from "../../websocket"
 import { ObjManager } from "../objManager"
-import { ManObj } from "../objects/man"
-import { PressedDir } from "../types"
 import { GameStateChangeEvent } from "./events"
 
 export class EventManager {
@@ -44,9 +42,6 @@ export class EventManager {
                     break
                 case "removeItem":
                     this.objManager.handleRemoveItemEventFromServer(event.payload)
-                    break
-                case "playerGetItem":
-                    this.objManager.handlePlayerGetItemEventFromServer(event.payload)
                     break
                 case "playerDie":
                     for (const p of event.payload) {

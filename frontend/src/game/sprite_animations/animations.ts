@@ -84,9 +84,9 @@ const createAllItemAnims = (scene: Scene) => {
     createAnim(scene, ANIMS.item.wall, s, 3, 3, false, false)
     createAnim(scene, ANIMS.item.brick, s, 4, 4, false, false)
     createAnim(scene, ANIMS.item.brickRuin, s, 5, 10, false, false)
-    createAnim(scene, ANIMS.item.fire, s, 11, 15, false, false) // ⚠️ frame 待確認
-    createAnim(scene, ANIMS.item.speed, s, 16, 17, false, false) // ⚠️ frame 待確認
-    createAnim(scene, ANIMS.item.moreBomb, s, 18, 19, false, false) // ⚠️ frame 待確認
+    createAnim(scene, ANIMS.item.fire, s, 12, 12, false, false) // ⚠️ frame 待確認
+    createAnim(scene, ANIMS.item.speed, s, 13, 13, false, false) // ⚠️ frame 待確認
+    createAnim(scene, ANIMS.item.moreBomb, s, 11, 11, false, false) // ⚠️ frame 待確認
 }
 
 const createAllExplosionAnims = (scene: Scene) => {

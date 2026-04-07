@@ -10,21 +10,11 @@ export type ManDirection = "up" | "left" | "down" | "right"
 export type PressedDir = ManDirection | null
 
 export interface Position {
-    y: number, x: number
+    posY: number, posX: number
 }
 export interface MapIndex {
-    y: number, x: number
+    indexY: number, indexX: number
 }
-export interface GameState{
-    players:{
-        manSpriteKey:ManSpriteKey,
-        name:string,
-        isSelf:boolean
-    }[],
-    gameEndTime:number,
-    originMapMatrix:OriginMapMatrix
-}
-
 export interface CountdownMapIndex{
     y:number,
     x:number,

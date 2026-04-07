@@ -15,7 +15,7 @@ export type SpriteKey = typeof SPRITES[number]
 
 export const loadAllSprites = (scene: Scene) => {
     SPRITES.forEach(key => {
-        const path = `assets/4x/${key}.png`
+        const path = `assets/3x/${key}.png`
         scene.load.spritesheet(key, path, {
             frameWidth: TILE_WIDTH,
             frameHeight: TILE_WIDTH,

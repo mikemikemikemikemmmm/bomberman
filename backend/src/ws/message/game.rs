@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use crate::game::types::{ItemType, ManDirection, ManSpriteKey};
 
 // ─── Incoming payloads (client → server) ─────────────────────────────────────
@@ -133,6 +134,13 @@ pub fn make_ws_msg_item_eaten(payload: &ItemEatenPayload) -> String {
     super::make_ws_msg("itemEaten", payload)
 }
 
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoveItemPayload {
+    pub x: i32,
+    pub y: i32,
+}
+
 #[derive(Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct GameStateChangedPayload {
@@ -140,6 +148,7 @@ pub struct GameStateChangedPayload {
     pub new_bombs: Vec<GenerateBombPayload>,
     pub bomb_explosions: Vec<BombExplodePayload>,
     pub new_items: Vec<CreateItemPayload>,
+    pub removed_items: Vec<RemoveItemPayload>,
     pub player_deaths: Vec<PlayerDiePayload>,
     pub items_eaten: Vec<ItemEatenPayload>,
     pub game_over: Option<GameOverPayload>,
@@ -151,6 +160,7 @@ impl GameStateChangedPayload {
             && self.new_bombs.is_empty()
             && self.bomb_explosions.is_empty()
             && self.new_items.is_empty()
+            && self.removed_items.is_empty()
             && self.player_deaths.is_empty()
             && self.items_eaten.is_empty()
             && self.game_over.is_none()
@@ -158,5 +168,91 @@ impl GameStateChangedPayload {
 }
 
 pub fn make_ws_msg_game_state_changed(payload: &GameStateChangedPayload) -> String {
-    super::make_ws_msg("gameStateChanged", payload)
+    let mut events: Vec<serde_json::Value> = Vec::new();
+
+    for pm in &payload.player_moves {
+        events.push(json!({
+            "type": "playerMove",
+            "payload": {
+                "manKey": pm.man_key,
+                "newX": pm.new_x,
+                "newY": pm.new_y,
+                "dir": pm.dir,
+                "isMoving": pm.is_moving,
+            }
+        }));
+    }
+
+    for bomb in &payload.new_bombs {
+        events.push(json!({
+            "type": "generateBomb",
+            "payload": {
+                "manSpriteKey": bomb.man_key,
+                "x": bomb.x,
+                "y": bomb.y,
+                "bombPower": bomb.bomb_power,
+            }
+        }));
+    }
+
+    for explosion in &payload.bomb_explosions {
+        events.push(json!({
+            "type": "bombExplode",
+            "payload": {
+                "x": explosion.x,
+                "y": explosion.y,
+                "cells": explosion.cells,
+            }
+        }));
+    }
+
+    for item in &payload.new_items {
+        events.push(json!({
+            "type": "createItem",
+            "payload": {
+                "x": item.x,
+                "y": item.y,
+                "itemType": item.item_type,
+            }
+        }));
+    }
+
+    for ri in &payload.removed_items {
+        events.push(json!({
+            "type": "removeItem",
+            "payload": { "x": ri.x, "y": ri.y }
+        }));
+    }
+
+    for eaten in &payload.items_eaten {
+        events.push(json!({
+            "type": "removeItem",
+            "payload": { "x": eaten.x, "y": eaten.y }
+        }));
+        events.push(json!({
+            "type": "playerGetItem",
+            "payload": {
+                "x": eaten.x,
+                "y": eaten.y,
+                "manKey": eaten.man_key,
+                "itemType": eaten.item_type,
+            }
+        }));
+    }
+
+    if !payload.player_deaths.is_empty() {
+        let deaths: Vec<serde_json::Value> = payload.player_deaths.iter()
+            .map(|d| json!({ "manKey": d.man_key }))
+            .collect();
+        events.push(json!({
+            "type": "playerDie",
+            "payload": deaths,
+        }));
+    }
+
+    if payload.game_over.is_some() {
+        events.push(json!({ "type": "gameOver" }));
+    }
+
+    super::make_ws_msg("gameStateChanged", &events)
 }

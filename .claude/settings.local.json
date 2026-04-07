@@ -3,7 +3,8 @@
     "allow": [
       "Bash(cmd.exe /c \"go version\")",
       "Bash(cmd.exe /c \"where go\")",
-      "Bash(cargo check:*)"
+      "Bash(cargo check:*)",
+      "Bash(cargo build:*)"
     ]
   }
 }

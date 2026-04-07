@@ -1,7 +1,7 @@
 use std::sync::atomic::Ordering;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::game::config::{BOMB_FUSE_SECS, MAP_H, MAP_W, TILE_WIDTH};
+use crate::game::config::{BOMB_FUSE_SECS, MAP_H, MAP_W};
 use crate::game::state::game_state::{Bomb, GameState};
 use crate::ws::message::GenerateBombPayload;
 
@@ -22,17 +22,15 @@ pub fn handle_player_create_bomb(gs: &mut GameState, payload: &GenerateBombPaylo
             return false;
         }
 
-        let tile_x = payload.x / TILE_WIDTH as i32;
-        let tile_y = payload.y / TILE_WIDTH as i32;
+        let tile_x = payload.x;
+        let tile_y = payload.y;
 
         if tile_x < 0 || tile_y < 0 || tile_x >= MAP_W as i32 || tile_y >= MAP_H as i32 {
             return false;
         }
 
         // Reject duplicate bomb on the same tile
-        if gs.bombs.iter().any(|b| {
-            b.x / TILE_WIDTH as i32 == tile_x && b.y / TILE_WIDTH as i32 == tile_y
-        }) {
+        if gs.bombs.iter().any(|b| b.x == tile_x && b.y == tile_y) {
             return false;
         }
 

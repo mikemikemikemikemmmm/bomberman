@@ -9,8 +9,8 @@ pub fn process_item_pickups(gs: &mut GameState, changes: &mut GameStateChangedPa
     let mut eaten: Vec<usize> = vec![];
 
     for (idx, item) in gs.items.iter().enumerate() {
-        let itx = item.x / TILE_WIDTH as i32;
-        let ity = item.y / TILE_WIDTH as i32;
+        let itx = item.x;
+        let ity = item.y;
 
         for mut player in gs.players.iter_mut() {
             if !player.is_alive.load(Ordering::Relaxed) {
