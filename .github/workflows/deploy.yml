@@ -49,6 +49,6 @@ jobs:
           # 這是你編譯輸出的正確位置
           path: './frontend-offline/dist'
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages 
         id: deployment
         uses: actions/deploy-pages@v4
