@@ -1,3 +1,5 @@
+![DEMO](https://github.com/mikemikemikemikemmmm/bomberman/blob/main/frontend-offline/DEMO.gif)
+
 # Bomberman Offline
 
 本地雙人 Bomberman 遊戲，直接在瀏覽器中執行。
