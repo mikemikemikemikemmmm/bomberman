@@ -20,7 +20,6 @@ pub async fn handle_init_socket(socket: WebSocket) {
     let state = get_global_state();
     // let client_id = state.alloc_client_id();
     let client_id =1;
-    println!("1111");
     let (sender, mut receiver) = mpsc::unbounded_channel::<Message>();
     state.client_sender_map.insert(client_id, sender.clone());
     state.client_state_map.insert(
@@ -29,7 +28,7 @@ pub async fn handle_init_socket(socket: WebSocket) {
             id: client_id,
             name: String::new(),
             room_id: None,
-            game_id: None,
+            game_id: Some(1),
         },
     );
 
@@ -103,10 +102,9 @@ async fn handle_msg(
     state: &'static AppState,
 ) -> Result<(), serde_json::Error> {
     let raw: WsRawMessage = serde_json::from_str(text)?;
-
     match raw.msg_type.as_str() {
         "setName" => {
-            let name: String = serde_json::from_value(raw.json_payload)?;
+            let name: String = serde_json::from_value(raw.payload)?;
             if let Some(mut cs) = state.client_state_map.get_mut(&client_id) {
                 cs.name = name;
             }
@@ -131,7 +129,7 @@ async fn handle_msg(
         }
 
         "joinRoom" => {
-            let room_id: u32 = serde_json::from_value(raw.json_payload)?;
+            let room_id: u32 = serde_json::from_value(raw.payload)?;
             let name = state
                 .client_state_map
                 .get(&client_id)
@@ -153,7 +151,7 @@ async fn handle_msg(
         }
 
         "changeMap" => {
-            let map_id: u32 = serde_json::from_value(raw.json_payload)?;
+            let map_id: u32 = serde_json::from_value(raw.payload)?;
             if let Some(rid) = state.client_state_map.get(&client_id).and_then(|cs| cs.room_id) {
                 state.send_to_room(rid, RoomCommand::ChangeMap { map_id });
             }
@@ -166,21 +164,22 @@ async fn handle_msg(
         }
 
         "playerMove" => {
-            let payload: PlayerMovePayload = serde_json::from_value(raw.json_payload)?;
+            let payload: PlayerMovePayload = serde_json::from_value(raw.payload)?;
+            println!("{}",5);
             if let Some(gid) = state.client_state_map.get(&client_id).and_then(|cs| cs.game_id) {
                 state.send_to_game(gid, GameCommand::PlayerMove(payload));
             }
         }
 
         "generateBomb" => {
-            let payload: GenerateBombPayload = serde_json::from_value(raw.json_payload)?;
+            let payload: GenerateBombPayload = serde_json::from_value(raw.payload)?;
             if let Some(gid) = state.client_state_map.get(&client_id).and_then(|cs| cs.game_id) {
                 state.send_to_game(gid, GameCommand::GenerateBomb(payload));
             }
         }
 
         "timeSyncPing" => {
-            let payload: TimeSyncPingPayload = serde_json::from_value(raw.json_payload)?;
+            let payload: TimeSyncPingPayload = serde_json::from_value(raw.payload)?;
             if let Some(gid) = state.client_state_map.get(&client_id).and_then(|cs| cs.game_id) {
                 state.send_to_game(gid, GameCommand::TimeSyncPing { client_id, sent_at: payload.sent_at });
             }
@@ -196,7 +195,7 @@ async fn handle_msg(
 
 pub fn test_game_start(host_client_id: u32) {
     let global_state = get_global_state();
-    let game_id = global_state.alloc_game_id();
+    let game_id = 1;
     let (game_tx, game_rx) = tokio::sync::mpsc::unbounded_channel::<GameCommand>();
     global_state.game_sender_map.insert(game_id, game_tx);
 

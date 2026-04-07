@@ -1,5 +1,5 @@
 use crate::ws::message::{GenerateBombPayload, PlayerMovePayload};
-
+#[derive(Debug)]
 pub enum GameCommand {
     PlayerMove(PlayerMovePayload),
     GenerateBomb(GenerateBombPayload),

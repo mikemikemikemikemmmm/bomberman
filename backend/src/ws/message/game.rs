@@ -12,7 +12,6 @@ pub struct PlayerMovePayload {
     pub new_y: u32,
     pub dir: ManDirection,
     pub is_moving: bool,
-    pub user_id: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

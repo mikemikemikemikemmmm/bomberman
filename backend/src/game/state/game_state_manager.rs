@@ -31,9 +31,10 @@ impl GameStateManager {
         game_state: &mut GameState,
     ) {
         let mut changes = GameStateChangedPayload::default();
-
         // Process all queued commands
         while let Some(cmd) = command_list.pop_front() {
+            println!("{}", 1111);
+            println!("{:?}", cmd);
             match cmd {
                 GameCommand::PlayerMove(payload) => {
                     handle_player_move(game_state, &payload);
@@ -67,7 +68,7 @@ impl GameStateManager {
         process_fires(game_state);
         process_destroying_bricks(game_state);
         process_item_pickups(game_state, &mut changes);
-        check_game_over(game_state, &mut changes);
+        // check_game_over(game_state, &mut changes);
 
         // Send one batched update to all players
         if !changes.is_empty() {

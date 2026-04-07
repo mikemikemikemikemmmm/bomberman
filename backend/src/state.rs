@@ -83,19 +83,19 @@ impl AppState {
     pub fn alloc_game_id(&self) -> u32 {
         self.next_game_id.fetch_add(1, Ordering::Relaxed)
     }
-    pub fn send_to_game(&self,game_id: u32, payload: GameCommand) {
+    pub fn send_to_game(&self, game_id: u32, payload: GameCommand) {
         if let Some(sender) = self.game_sender_map.get(&game_id) {
             let _ = sender.send(payload);
         }
     }
 
-    pub fn send_to_client(&self,client_id: u32, payload: Message) {
+    pub fn send_to_client(&self, client_id: u32, payload: Message) {
         if let Some(sender) = self.client_sender_map.get(&client_id) {
             let _ = sender.send(payload);
         }
     }
 
-    pub fn send_to_room(&self,room_id: u32, payload: RoomCommand) {
+    pub fn send_to_room(&self, room_id: u32, payload: RoomCommand) {
         if let Some(sender) = self.room_sender_map.get(&room_id) {
             let _ = sender.send(payload);
         }

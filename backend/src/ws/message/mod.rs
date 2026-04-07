@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize)]
 pub struct WsRawMessage {
     pub msg_type: String,
-    pub json_payload: serde_json::Value,
+    pub payload: serde_json::Value,
 }
 
 pub fn make_ws_msg<T: Serialize + ?Sized>(msg_type: &str, payload: &T) -> String {
