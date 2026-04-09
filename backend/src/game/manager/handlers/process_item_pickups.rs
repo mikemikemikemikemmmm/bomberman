@@ -1,7 +1,7 @@
 use std::sync::atomic::Ordering;
 
 use crate::game::config::TILE_WIDTH;
-use crate::game::state::game_state::GameState;
+use crate::game::obj_manager::game_state::GameState;
 use crate::game::types::ItemType;
 use crate::ws::message::{GameStateChangedPayload, ItemEatenPayload};
 

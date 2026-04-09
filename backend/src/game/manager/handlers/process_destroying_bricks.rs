@@ -1,6 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::game::state::game_state::GameState;
+use crate::game::obj_manager::game_state::GameState;
 
 fn now_ms_u128() -> u128 {
     SystemTime::now()

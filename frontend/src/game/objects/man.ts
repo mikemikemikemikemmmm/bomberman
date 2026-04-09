@@ -3,9 +3,16 @@ import { BASE_MAN_SPEED } from "../gameConfig";
 import { ManSpriteKey } from "../sprite_animations/sprite";
 import { ManDirection, MapIndex, Position } from "../types";
 import { BaseObj } from "./base";
+import { ItemType } from "../event/events";
+import { ANIMS } from "../sprite_animations/animations";
+
+const MAX_SPEED = 12
+const MAX_BOMB_NUM = 6
+const MAX_BOMB_POWER = 6
 
 export class ManObj extends BaseObj {
     // 自訂屬性
+    isAlive = true
     isSelf: boolean = false
     manSpriteKey: ManSpriteKey
     dir: ManDirection = "down"
@@ -36,5 +43,22 @@ export class ManObj extends BaseObj {
         } else {
             this.sprite.anims.resume()
         }
+    }
+    eatItem(itemType: ItemType) {
+        if (itemType === "speed") this.speed = Math.min(MAX_SPEED, this.speed + 1)
+        else if (itemType === "moreBomb") this.bombNum = Math.min(MAX_BOMB_NUM, this.bombNum + 1)
+        else if (itemType === "fire") this.bombPower = Math.min(MAX_BOMB_POWER, this.bombPower + 1)
+    }
+    die() {
+        this.isAlive = false
+        const anim = ANIMS[this.manSpriteKey].die
+        this.sprite.once(
+            Phaser.Animations.Events.ANIMATION_COMPLETE_KEY +anim,
+            () => {
+                console.log("die complete")
+                this.sprite.destroy()
+            }
+        )
+        this.sprite.anims.play(anim)
     }
 }

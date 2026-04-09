@@ -22,7 +22,7 @@ type GlobalState = {
   roomId: number | null
   gameMetaData: GameMetaData | null
   // ===== actions =====
-  setUserId: (v: number | null) => void
+  setUserId: (v: number ) => void
   setUserName: (v: string) => void
   setMapId: (v: number) => void
 
@@ -34,7 +34,7 @@ type GlobalState = {
 }
 
 const initialState = {
-  userId: 1 as number | null, //TODO
+  userId: 1 as number , //TODO
   userName: "guest",
   mapId: 1,
   roomId: null as number | null,

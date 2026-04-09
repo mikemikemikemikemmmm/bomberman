@@ -168,9 +168,6 @@ export class ObjManager {
 
         return result
     }
-    handleChainBombExplode() {
-
-    }
     handleSelfPositionChange(selfManObj: ManObj, pressedDir: PressedDir) {
         const speed = selfManObj.speed
         const prevX = selfManObj.sprite.x
@@ -276,74 +273,6 @@ export class ObjManager {
         return payload
     }
 
-    // handleBombExplodeEvent(payload: BombExplode["payload"]) {
-    //     const originIndex: MapIndex = { indexX: payload.x, indexY: payload.y }
-    //     const bombTile = this.mapManager.getMapTileByIndex(originIndex)
-    //     if (!bombTile || bombTile === "wall" || bombTile.type !== "bomb") return
-
-    //     const bombObj = bombTile as BombObj
-    //     bombObj.sprite.destroy()
-    //     this.mapManager.cleanMapTileByIndex(originIndex)
-    //     this.bombs = this.bombs.filter(b => {
-    //         const { indexY, indexX } = b.getMapIndex()
-    //         return !(indexY === originIndex.indexY && indexX === originIndex.indexX)
-    //     })
-    //     const bombOwner = this.players.find(p => p.manSpriteKey === bombObj.manSpriteKey)
-    //     if (!bombOwner) {
-    //         return
-    //     }
-    //     bombOwner.usedBombNum = Math.max(0, bombOwner.usedBombNum - 1)
-    //     for (const cell of payload.cells) {
-    //         const cellIndex: MapIndex = { indexX: cell.x, indexY: cell.y }
-    //         const tileType = this.mapManager.getMapTileTypeByIndex(cellIndex)
-    //         const tile = this.mapManager.getMapTileByIndex(cellIndex)
-    //         if (tileType === "brick" && tile && tile !== "wall") {
-    //             const brick = tile as BrickObj
-    //             brick.triggerRuin(i => {
-    //                 const randomInt = Math.floor(Math.random() * 5);
-    //                 const items = ["speed", "moreBomb", "fire"] as ItemType[]
-    //                 if (randomInt <= 2) {
-    //                     const index = Math.floor(Math.random() * items.length);
-    //                     this.handleCreateItemEvent({ itemType: items[index], x: i.indexX, y: i.indexY })
-    //                 }
-    //             })
-    //             this.ruiningBricks.push(brick)
-    //             this.mapManager.setMapTileByIndex(cellIndex, null)
-    //         }
-    //         if (tileType === "item" && tile && tile !== "wall") {
-    //             tile.sprite.destroy()
-    //             this.mapManager.cleanMapTileByIndex(cellIndex)
-    //         }
-    //         if (tileType === "bomb" && tile && tile !== "wall") {
-    //             const chainBomb = tile as BombObj
-    //             const chainIndex = chainBomb.getMapIndex()
-    //             const chainCells = this.computeExplosionCells(chainIndex, chainBomb.power)
-    //             this.handleBombExplodeEvent({
-    //                 x: chainIndex.indexX,
-    //                 y: chainIndex.indexY,
-    //                 cells: chainCells.map(c => ({ x: c.indexX, y: c.indexY }))
-    //             })
-    //         }
-    //     }
-
-    //     let up = 0, down = 0, left = 0, right = 0
-    //     for (const cell of payload.cells) {
-    //         if (cell.x === originIndex.indexX && cell.y < originIndex.indexY) up = Math.max(up, originIndex.indexY - cell.y)
-    //         if (cell.x === originIndex.indexX && cell.y > originIndex.indexY) down = Math.max(down, cell.y - originIndex.indexY)
-    //         if (cell.y === originIndex.indexY && cell.x < originIndex.indexX) left = Math.max(left, originIndex.indexX - cell.x)
-    //         if (cell.y === originIndex.indexY && cell.x > originIndex.indexX) right = Math.max(right, cell.x - originIndex.indexX)
-    //     }
-
-    //     const fire = new FireObj(this.scene, {
-    //         centerX: originIndex.indexX,
-    //         centerY: originIndex.indexY,
-    //         verticalStart: up,
-    //         verticalEnd: down,
-    //         horizontalStart: left,
-    //         horizontalEnd: right,
-    //     })
-    //     this.fires.push(fire)
-    // }
 
     handleCreateItemEvent(payload: CreateItem["payload"]) {
         const index: MapIndex = { indexX: payload.x, indexY: payload.y }

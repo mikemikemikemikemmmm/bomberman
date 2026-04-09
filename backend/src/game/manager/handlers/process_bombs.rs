@@ -8,7 +8,7 @@ use crate::game::config::{
     BRICK_DESTROY_ANIMATION_SEC, FIRE_ANIMATION_SEC, MAP_H, MAP_W, TILE_WIDTH,
 };
 use crate::game::map::MapMatrixCell;
-use crate::game::state::game_state::{DestroyingBrick, Fire, GameState, Item};
+use crate::game::obj_manager::game_state::{DestroyingBrick, Fire, GameState, Item};
 use crate::game::types::ItemType;
 use crate::ws::message::{
     BombExplodePayload, CreateItemPayload, GameStateChangedPayload, GridPos, PlayerDiePayload,

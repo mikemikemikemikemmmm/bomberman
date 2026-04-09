@@ -3,7 +3,7 @@ use std::sync::atomic::Ordering;
 use crate::game::config::{MAP_H, MAP_W, TILE_WIDTH};
 use crate::game::map::MapMatrixCell;
 use crate::game::player::Dir;
-use crate::game::state::game_state::GameState;
+use crate::game::obj_manager::game_state::GameState;
 use crate::game::types::ManDirection;
 use crate::ws::message::PlayerMovePayload;
 

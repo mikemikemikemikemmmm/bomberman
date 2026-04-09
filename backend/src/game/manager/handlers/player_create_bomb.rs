@@ -2,7 +2,7 @@ use std::sync::atomic::Ordering;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::game::config::{BOMB_FUSE_SECS, MAP_H, MAP_W};
-use crate::game::state::game_state::{Bomb, GameState};
+use crate::game::obj_manager::game_state::{Bomb, GameState};
 use crate::ws::message::GenerateBombPayload;
 
 fn now_ms() -> u64 {

@@ -165,7 +165,6 @@ async fn handle_msg(
 
         "playerMove" => {
             let payload: PlayerMovePayload = serde_json::from_value(raw.payload)?;
-            println!("{}",5);
             if let Some(gid) = state.client_state_map.get(&client_id).and_then(|cs| cs.game_id) {
                 state.send_to_game(gid, GameCommand::PlayerMove(payload));
             }

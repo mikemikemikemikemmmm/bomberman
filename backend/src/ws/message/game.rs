@@ -140,6 +140,13 @@ pub struct RemoveItemPayload {
     pub y: i32,
 }
 
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoveFirePayload {
+    pub x: i32,
+    pub y: i32,
+}
+
 #[derive(Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct GameStateChangedPayload {
@@ -148,6 +155,7 @@ pub struct GameStateChangedPayload {
     pub bomb_explosions: Vec<BombExplodePayload>,
     pub new_items: Vec<CreateItemPayload>,
     pub removed_items: Vec<RemoveItemPayload>,
+    pub removed_fires: Vec<RemoveFirePayload>,
     pub player_deaths: Vec<PlayerDiePayload>,
     pub items_eaten: Vec<ItemEatenPayload>,
     pub game_over: Option<GameOverPayload>,
@@ -160,6 +168,7 @@ impl GameStateChangedPayload {
             && self.bomb_explosions.is_empty()
             && self.new_items.is_empty()
             && self.removed_items.is_empty()
+            && self.removed_fires.is_empty()
             && self.player_deaths.is_empty()
             && self.items_eaten.is_empty()
             && self.game_over.is_none()
@@ -220,6 +229,13 @@ pub fn make_ws_msg_game_state_changed(payload: &GameStateChangedPayload) -> Stri
         events.push(json!({
             "type": "removeItem",
             "payload": { "x": ri.x, "y": ri.y }
+        }));
+    }
+
+    for rf in &payload.removed_fires {
+        events.push(json!({
+            "type": "removeFire",
+            "payload": { "x": rf.x, "y": rf.y }
         }));
     }
 

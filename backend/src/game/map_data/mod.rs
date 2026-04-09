@@ -3,7 +3,7 @@ use std::sync::Mutex;
 
 use once_cell::sync::Lazy;
 
-use crate::game::{config::{MAP_H, MAP_W}, map::map1::MAP_1_MATRIX};
+use crate::game::{config::{MAP_H, MAP_W}, map_data::map1::MAP_1_MATRIX};
 
 pub mod map1;
 

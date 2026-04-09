@@ -5,8 +5,8 @@ import { ManDirection, MapIndex, Position } from "../types";
 import { BaseObj } from "./base";
 import { ItemType } from "./item";
 const MAX_SPEED = 12
-const MAX_BOMB_NUM = 10
-const MAX_BOMB_POWER = 10
+const MAX_BOMB_NUM = 6
+const MAX_BOMB_POWER = 6
 export class ManObj extends BaseObj {
     // 自訂屬性
     isAlive: boolean = true

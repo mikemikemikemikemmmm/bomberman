@@ -4,7 +4,7 @@ import type { ManDirection } from '../game/types'
 import type { ItemType } from '../game/event/events'
 import { GameMetaData } from '../store'
 
-interface PlayerMovePayload {
+export interface SendSelfPlayerMovePayload {
   manKey: ManSpriteKey
   newX: number
   newY: number
@@ -13,11 +13,12 @@ interface PlayerMovePayload {
   userId: number
 }
 
-interface GenerateBombPayload {
+export interface SendGenerateBombPayload {
   manKey: ManSpriteKey
   x: number
   y: number
   bombPower: number
+  userId: number
 }
 
 interface GridPos { x: number; y: number }
@@ -31,8 +32,8 @@ export interface WsEventMap {
   disconnected: undefined
   errorWhenConnect: undefined
   gameMetaData: GameMetaData
-  playerMove: PlayerMovePayload
-  generateBomb: GenerateBombPayload
+  playerMove: SendSelfPlayerMovePayload
+  generateBomb: SendGenerateBombPayload
   bombExplode: { x: number; y: number; cells: GridPos[] }
   createItem: { x: number; y: number; itemType: ItemType }
   playerDie: { manKey: ManSpriteKey }

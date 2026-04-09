@@ -3,17 +3,24 @@ import { MapIndex, Position, PressedDir } from "./types";
 import { TILE_WIDTH } from "./gameConfig";
 import { ManObj } from "./objects/man";
 import { BombObj } from "./objects/bomb";
-import { FireObj } from "./objects/fire";
+import { FireObj, FireObjConfig } from "./objects/fire";
 import { ItemObj } from "./objects/item";
-import { PlayerMoveEventPayload, BombExplode, CreateItem, PlayerDie, GenerateBombEvent, RemoveItem } from "./event/events";
+import { PlayerMoveEventPayload, BombExplode, CreateItem, PlayerDie, GenerateBombEvent, RemoveItem, PlayerGetItemEvent, ItemType } from "./event/events";
 import { MapManager } from "./mapManager";
 import { tranIndexToPosition } from "./utils";
 import { ANIMS } from "./sprite_animations/animations";
-import { GameMetaData } from "../store";
+import { GameMetaData, useGlobalStore } from "../store";
 import { BrickObj } from "./objects/brick";
+import { SendSelfPlayerMovePayload } from "../websocket/eventMap";
 
 
 
+// interface ExplodeData {
+//     explodeBombs: BombObj[],
+//     ruinBricks: BrickObj[],
+//     destroyItems: ItemObj[],
+//     showFireConfigs: FireObjConfig[]
+// }
 export class ObjManager {
     players: ManObj[] = []
     mapManager: MapManager
@@ -22,49 +29,6 @@ export class ObjManager {
     ruiningBricks: BrickObj[] = []
     constructor(private scene: Scene, gameMetaData: GameMetaData) {
         this.mapManager = new MapManager(scene, gameMetaData, this.players)
-    }
-    handleCountdownObjTime(passMs: number) {
-        this.fires = this.fires.filter(fire => {
-            fire.remainingMs -= passMs
-            if (fire.remainingMs <= 0) {
-                fire.destroy()
-                return false
-            }
-            return true
-        })
-
-        const bombsToExplode: BombObj[] = []
-        this.bombs = this.bombs.filter(b => {
-            b.remainingMs -= passMs
-            if (b.remainingMs <= 0) {
-                bombsToExplode.push(b)
-                return false
-            }
-            return true
-        })
-        for (const b of bombsToExplode) {
-            const { indexY, indexX } = b.getMapIndex()
-            const tile = this.mapManager.getMapTileByIndex({ indexY, indexX })
-            if (tile && tile !== 'wall' && tile.getObjType() === 'bomb') {
-                const cells = this.computeExplosionCells({ indexY, indexX }, b.power)
-                this.handleBombExplodeEventFromServer({ x: indexX, y: indexY, cells: cells.map(c => ({ x: c.indexX, y: c.indexY })) })
-            }
-        }
-    }
-
-    private computeExplosionCells(origin: MapIndex, power: number): MapIndex[] {
-        const cells: MapIndex[] = [{ indexX: origin.indexX, indexY: origin.indexY }]
-        const dirs = [{ dy: -1, dx: 0 }, { dy: 1, dx: 0 }, { dy: 0, dx: -1 }, { dy: 0, dx: 1 }]
-        for (const { dy, dx } of dirs) {
-            for (let i = 1; i <= power; i++) {
-                const cell: MapIndex = { indexY: origin.indexY + dy * i, indexX: origin.indexX + dx * i }
-                const tileType = this.mapManager.getMapTileTypeByIndex(cell)
-                if (tileType === 'wall') break
-                cells.push(cell)
-                if (tileType === 'brick') break
-            }
-        }
-        return cells
     }
     ///by self
     handleSelfPositionChange(selfManObj: ManObj, pressedDir: PressedDir) {
@@ -121,21 +85,24 @@ export class ObjManager {
         }
 
         this.handleCanPassBomb(selfManObj, { posY: finalY, posX: finalX })
+        const finalDir = pressedDir || currDir
+        const finalMoving = !!pressedDir
+        // selfManObj.setDir(finalDir)
+        // selfManObj.setMoving(finalMoving)
         const eventPayloadToServer = {
             manKey: selfManObj.manSpriteKey,
-            newX: finalX,
-            newY: finalY,
-            dir: pressedDir || currDir,
-            isMoving: !!pressedDir,
-        }
-        selfManObj.sprite.setPosition(finalX, finalY)
-        selfManObj.setDir(eventPayloadToServer.dir)
-        selfManObj.setMoving(eventPayloadToServer.isMoving)
-        if (canMove) {
-            return eventPayloadToServer
-        } else {
-            return null
-        }
+            dir: finalDir,
+            isMoving: finalMoving,
+            userId: useGlobalStore.getState().userId,
+            newX: canMove ? finalX : prevX,
+            newY: canMove ? finalX : prevY,
+        } as SendSelfPlayerMovePayload
+        // if (canMove) {
+        //     eventPayloadToServer.newX = finalX
+        //     eventPayloadToServer.newY = finalY
+        //     // selfManObj.sprite.setPosition(finalX, finalY)
+        // }
+        return eventPayloadToServer
     }
 
     handleCanPassBomb(manObj: ManObj, finalManPos: Position) {
@@ -164,16 +131,19 @@ export class ObjManager {
             x: bombIndex.indexX,
             y: bombIndex.indexY,
             bombPower: playerObj.bombPower,
+            userId: useGlobalStore.getState().userId as number
         }
         return payload
     }
 
     ///by server
     handlePlayerMoveEventFromServer(playerMoveEventPayload: PlayerMoveEventPayload) {
-        const selfMan = this.players.find(p => p.isSelf)
-        if (selfMan) return
+        // const selfMan = this.players.find(p => p.isSelf)
+        // console.log(selfMan, 2222222222)
+        // if (selfMan) return
         const { newX, newY, dir, isMoving, manKey } = playerMoveEventPayload
         const targetMan = this.players.find(p => p.manSpriteKey === manKey)
+        console.log(playerMoveEventPayload, 2222222222)
         if (!targetMan) {
             return
         }
@@ -190,70 +160,6 @@ export class ObjManager {
             this.bombs.push(bomb)
         }
     }
-    handleBombExplodeEventFromServer(payload: BombExplode["payload"]) {
-        const originIndex: MapIndex = { indexX: payload.x, indexY: payload.y }
-        const bombTile = this.mapManager.getMapTileByIndex(originIndex)
-        if (!bombTile || bombTile === "wall" || bombTile.type !== "bomb") return
-
-        const bombObj = bombTile as BombObj
-        bombObj.sprite.destroy()
-        this.mapManager.cleanMapTileByIndex(originIndex)
-        this.bombs = this.bombs.filter(b => {
-            const { indexY, indexX } = b.getMapIndex()
-            return !(indexY === originIndex.indexY && indexX === originIndex.indexX)
-        })
-        const bombOwner = this.players.find(p => p.manSpriteKey === bombObj.manSpriteKey)
-        if (!bombOwner) {
-            return
-        }
-        bombOwner.usedBombNum = Math.max(0, bombOwner.usedBombNum - 1)
-        for (const cell of payload.cells) {
-            const cellIndex: MapIndex = { indexX: cell.x, indexY: cell.y }
-            const tileType = this.mapManager.getMapTileTypeByIndex(cellIndex)
-            const tile = this.mapManager.getMapTileByIndex(cellIndex)
-            if (tileType === "brick" && tile && tile !== "wall") {
-                const brick = tile as BrickObj
-                brick.triggerRuin(i =>
-                    this.handleCreateItemEventFromServer({ itemType: "speed", x: i.indexX, y: i.indexY })
-                )
-                this.ruiningBricks.push(brick)
-                this.mapManager.setMapTileByIndex(cellIndex, null)
-            }
-            if (tileType === "item" && tile && tile !== "wall") {
-                tile.sprite.destroy()
-                this.mapManager.cleanMapTileByIndex(cellIndex)
-            }
-            if (tileType === "bomb" && tile && tile !== "wall") {
-                const chainBomb = tile as BombObj
-                const chainIndex = chainBomb.getMapIndex()
-                const chainCells = this.computeExplosionCells(chainIndex, chainBomb.power)
-                this.handleBombExplodeEventFromServer({
-                    x: chainIndex.indexX,
-                    y: chainIndex.indexY,
-                    cells: chainCells.map(c => ({ x: c.indexX, y: c.indexY }))
-                })
-            }
-        }
-
-        let up = 0, down = 0, left = 0, right = 0
-        for (const cell of payload.cells) {
-            if (cell.x === originIndex.indexX && cell.y < originIndex.indexY) up = Math.max(up, originIndex.indexY - cell.y)
-            if (cell.x === originIndex.indexX && cell.y > originIndex.indexY) down = Math.max(down, cell.y - originIndex.indexY)
-            if (cell.y === originIndex.indexY && cell.x < originIndex.indexX) left = Math.max(left, originIndex.indexX - cell.x)
-            if (cell.y === originIndex.indexY && cell.x > originIndex.indexX) right = Math.max(right, cell.x - originIndex.indexX)
-        }
-
-        const fire = new FireObj(this.scene, {
-            centerX: originIndex.indexX,
-            centerY: originIndex.indexY,
-            verticalStart: up,
-            verticalEnd: down,
-            horizontalStart: left,
-            horizontalEnd: right,
-        })
-        this.fires.push(fire)
-    }
-
     handleCreateItemEventFromServer(payload: CreateItem["payload"]) {
         const index: MapIndex = { indexX: payload.x, indexY: payload.y }
         const item = new ItemObj(this.scene, index, payload.itemType)
@@ -272,10 +178,69 @@ export class ObjManager {
     handlePlayerDieEventFromServer(payload: PlayerDie["payload"][number]) {
         const player = this.players.find(p => p.manSpriteKey === payload.manKey)
         if (!player) return
-        player.sprite.anims.play(ANIMS[payload.manKey].die)
-        player.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-            player.sprite.destroy()
-            this.players = this.players.filter(p => p.manSpriteKey !== payload.manKey)
+        player.die()
+    }
+    handleReomoveFireEventFromServer(payload: { x: number; y: number }) {
+        this.fires = this.fires.filter(fire => {
+            const cx = fire.centerSprite.x / TILE_WIDTH
+            const cy = fire.centerSprite.y / TILE_WIDTH
+            if (cx === payload.x && cy === payload.y) {
+                fire.destroy()
+                return false
+            }
+            return true
         })
     }
+    handleBombExplodeEventFromServer(payload: BombExplode["payload"]) {
+        const originIndex: MapIndex = { indexX: payload.x, indexY: payload.y }
+        const bombTile = this.mapManager.getMapTileByIndex(originIndex)
+        if (bombTile && bombTile !== "wall" && bombTile.type === "bomb") {
+            const bombObj = bombTile as BombObj
+            const bombOwner = this.players.find(p => p.manSpriteKey === bombObj.manSpriteKey)
+            if (bombOwner) bombOwner.usedBombNum = Math.max(0, bombOwner.usedBombNum - 1)
+            bombObj.sprite.destroy()
+            this.mapManager.cleanMapTileByIndex(originIndex)
+            this.bombs = this.bombs.filter(b => {
+                const { indexX, indexY } = b.getMapIndex()
+                return !(indexX === originIndex.indexX && indexY === originIndex.indexY)
+            })
+        }
+
+        // Destroy bricks in fire cells (items are handled server-side via createItem/removeItem)
+        for (const cell of payload.cells) {
+            const cellIndex: MapIndex = { indexX: cell.x, indexY: cell.y }
+            const tileType = this.mapManager.getMapTileTypeByIndex(cellIndex)
+            const tile = this.mapManager.getMapTileByIndex(cellIndex)
+            if (tileType === "brick" && tile && tile !== "wall") {
+                const brick = tile as BrickObj
+                brick.triggerRuin(() => { })
+                this.ruiningBricks.push(brick)
+                this.mapManager.setMapTileByIndex(cellIndex, null)
+            }
+        }
+
+        // Create fire visual by reconstructing spread distances from cells
+        const { x, y, cells } = payload
+        let up = 0, down = 0, left = 0, right = 0
+        for (const cell of cells) {
+            if (cell.x === x && cell.y < y) up = Math.max(up, y - cell.y)
+            if (cell.x === x && cell.y > y) down = Math.max(down, cell.y - y)
+            if (cell.y === y && cell.x < x) left = Math.max(left, x - cell.x)
+            if (cell.y === y && cell.x > x) right = Math.max(right, cell.x - x)
+        }
+        const fire = new FireObj(this.scene, {
+            centerX: x, centerY: y,
+            verticalStart: up, verticalEnd: down,
+            horizontalStart: left, horizontalEnd: right,
+        })
+        this.fires.push(fire)
+    }
+
+    handlePlayerGetItemEventFromServer(payload: PlayerGetItemEvent["payload"]) {
+        const player = this.players.find(p => p.manSpriteKey === payload.manKey)
+        if (!player) return
+        player.eatItem(payload.itemType as ItemType)
+    }
+
+
 }

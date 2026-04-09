@@ -1,7 +1,7 @@
 import { COUNTDOWN_MS, TILE_WIDTH } from "../gameConfig";
 import { ANIMS } from "../sprite_animations/animations";
 import { ObjType } from "../types";
-interface FireObjConfig {
+export interface FireObjConfig {
     centerX: number,
     centerY: number,
     verticalStart: number,

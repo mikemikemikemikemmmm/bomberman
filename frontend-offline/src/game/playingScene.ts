@@ -5,11 +5,13 @@ import { createAllAnims } from './sprite_animations/animations';
 import { SCENE_MAP } from './gameConfig';
 import { InputManager } from './inputManager';
 import { MapManager } from './mapManager';
+import { AIController } from '../ai';
 
 export class PlayingScene extends Scene {
     mapManager: MapManager
     objManager: ObjManager
     inputManager: InputManager
+    aiController: AIController
     private gameActive = false
     private gameEndTime: number
     hasLoadedAssets = false
@@ -28,6 +30,7 @@ export class PlayingScene extends Scene {
         }
         this.inputManager = new InputManager(this.input)
         this.objManager = new ObjManager(this)
+        this.aiController = new AIController(this.objManager)
         // this.eventManager = new EventManager(this.objManager)
 
 
@@ -64,12 +67,26 @@ export class PlayingScene extends Scene {
         if (!this.gameActive) return
         // this.eventManager.consumeStateChangeEvent()
         this.handleKeyboard(ManSpriteKey.Man1)
-        this.handleKeyboard(ManSpriteKey.Man2)
+        this.handleAI()
         this.objManager.handleCountdownObjTime(delta)
         this.objManager.checkPlayerDie()
         this.objManager.checkPlayerEatItem()
         this.checkGameOver()
 
+    }
+
+    handleAI() {
+        const aiMan = this.objManager.players.find(p => p.manSpriteKey === ManSpriteKey.Man2)
+        if (!aiMan || !aiMan.isAlive) return
+        const { dir, placeBomb } = this.aiController.getInput()
+        if (dir) {
+            this.objManager.handleSelfPositionChange(aiMan, dir)
+        } else {
+            aiMan.sprite.anims.stop()
+        }
+        if (placeBomb) {
+            this.objManager.handlePlaceBomb(aiMan)
+        }
     }
 
     handleKeyboard(manSpriteKey: ManSpriteKey) {

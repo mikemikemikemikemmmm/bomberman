@@ -3,7 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use tracing::info;
 
-use crate::game::state::game_state::GameState;
+use crate::game::obj_manager::game_state::GameState;
 use crate::ws::message::{GameOverPayload, GameStateChangedPayload};
 
 fn now_ms() -> u64 {

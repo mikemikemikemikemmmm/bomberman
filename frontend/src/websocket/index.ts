@@ -32,7 +32,7 @@ export class WsEmitter {
     this.ws.onmessage = (event: MessageEvent) => {
       try {
         const { type, payload } = JSON.parse(event.data);
-        console.log("receive", type, payload)
+        // console.log("receive", type, payload)
         // if (type === "gameStarted") {
         //   useGlobalStore().setGameMetaData(payload) //TODO
         // } else {

@@ -1,5 +1,5 @@
 import { ManDirection } from "../types"
-import type { ManSpriteKey, SpriteKey } from "../sprite_animations/sprite"
+import type { ManSpriteKey } from "../sprite_animations/sprite"
 export type ItemType = "fire" | "speed" | "moreBomb"
 export interface PlayerMoveEventPayload {
     manKey: ManSpriteKey
@@ -56,6 +56,13 @@ export interface PlayerDie {
         manKey: ManSpriteKey
     }[]
 }
+export interface RemoveFire {
+    type: "removeFire"
+    payload: {
+        x: number
+        y: number
+    }
+}
 export interface GameOver {
     type: "gameOver"
 }
@@ -74,6 +81,7 @@ export type GameStateChangeEvent =
     | BombExplode
     | CreateItem
     | RemoveItem
+    | RemoveFire
     | PlayerDie
     | GameOver
     | PlayerGetItemEvent

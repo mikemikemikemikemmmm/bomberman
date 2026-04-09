@@ -21,47 +21,47 @@ export const WINDOW_H = WINDOW_W
 
 
 // Matches backend4 MAP_1 exactly
-export const gameMapMatrix: OriginMapMatrix = [
-    ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"],
+// export const gameMapMatrix: OriginMapMatrix = [
+//     ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"],
 
-    ["wall", ManSpriteKey.Man1, null, "brick", null, null, "brick", null, null, null, null, "brick", null, null, null, "brick", null, null, null, "wall"],
+//     ["wall", ManSpriteKey.Man1, null, "brick", null, null, "brick", null, null, null, null, "brick", null, null, null, "brick", null, null, null, "wall"],
 
-    ["wall", null, null, null, null, null, null, null, null, "brick", null, null, null, null, null, null, null, null, null, "wall"],
+//     ["wall", null, null, null, null, null, null, null, null, "brick", null, null, null, null, null, null, null, null, null, "wall"],
 
-    ["wall", null, "brick", null, null, "brick", null, null, null, null, null, null, "brick", null, null, "brick", null, null, null, "wall"],
+//     ["wall", null, "brick", null, null, "brick", null, null, null, null, null, null, "brick", null, null, "brick", null, null, null, "wall"],
 
-    ["wall", null, null, null, null, null, null, "brick", null, null, null, null, null, null, "brick", null, null, null, null, "wall"],
+//     ["wall", null, null, null, null, null, null, "brick", null, null, null, null, null, null, "brick", null, null, null, null, "wall"],
 
-    ["wall", null, null, null, "brick", null, "brick", null, null, null, "brick", null, null, null, null, null, "brick", null, null, "wall"],
+//     ["wall", null, null, null, "brick", null, "brick", null, null, null, "brick", null, null, null, null, null, "brick", null, null, "wall"],
 
-    ["wall", null, null, null, null, null, null, "brick", ManSpriteKey.Man2, null, null, null, "brick", null, null, null, null, null, null, "wall"],
+//     ["wall", null, null, null, null, null, null, "brick", ManSpriteKey.Man2, null, null, null, "brick", null, null, null, null, null, null, "wall"],
 
-    ["wall", null, "brick", null, null, null, null, null, "brick", null, null, null, null, null, "brick", null, null, null, null, "wall"],
+//     ["wall", null, "brick", null, null, null, null, null, "brick", null, null, null, null, null, "brick", null, null, null, null, "wall"],
 
-    ["wall", ManSpriteKey.Man3, null, null, null, "brick", null, null, ManSpriteKey.Man4, null, null, "brick", null, null, null, null, "brick", null, null, "wall"],
+//     ["wall", ManSpriteKey.Man3, null, null, null, "brick", null, null, ManSpriteKey.Man4, null, null, "brick", null, null, null, null, "brick", null, null, "wall"],
 
-    ["wall", null, null, "brick", null, null, null, null, null, null, "brick", null, null, null, null, null, null, "brick", null, "wall"],
+//     ["wall", null, null, "brick", null, null, null, null, null, null, "brick", null, null, null, null, null, null, "brick", null, "wall"],
 
-    ["wall", null, null, null, null, "brick", null, null, null, null, null, null, "brick", null, null, "brick", null, null, null, "wall"],
+//     ["wall", null, null, null, null, "brick", null, null, null, null, null, null, "brick", null, null, "brick", null, null, null, "wall"],
 
-    ["wall", null, "brick", null, null, null, null, "brick", null, null, null, "brick", null, null, null, null, null, null, null, "wall"],
+//     ["wall", null, "brick", null, null, null, null, "brick", null, null, null, "brick", null, null, null, null, null, null, null, "wall"],
 
-    ["wall", null, null, null, "brick", null, null, null, null, "brick", null, null, null, null, "brick", null, null, null, null, "wall"],
+//     ["wall", null, null, null, "brick", null, null, null, null, "brick", null, null, null, null, "brick", null, null, null, null, "wall"],
 
-    ["wall", null, null, null, null, null, "brick", null, null, null, null, null, "brick", null, null, null, "brick", null, null, "wall"],
+//     ["wall", null, null, null, null, null, "brick", null, null, null, null, null, "brick", null, null, null, "brick", null, null, "wall"],
 
-    ["wall", null, "brick", null, null, null, null, null, "brick", null, null, null, null, null, null, null, null, null, null, "wall"],
+//     ["wall", null, "brick", null, null, null, null, null, "brick", null, null, null, null, null, null, null, null, null, null, "wall"],
 
-    ["wall", null, null, null, null, "brick", null, null, null, null, "brick", null, null, null, null, "brick", null, null, null, "wall"],
+//     ["wall", null, null, null, null, "brick", null, null, null, null, "brick", null, null, null, null, "brick", null, null, null, "wall"],
 
-    ["wall", null, null, "brick", null, null, null, null, null, null, null, null, "brick", null, null, null, null, "brick", null, "wall"],
+//     ["wall", null, null, "brick", null, null, null, null, null, null, null, null, "brick", null, null, null, null, "brick", null, "wall"],
 
-    ["wall", null, null, null, null, null, "brick", null, null, null, null, "brick", null, null, null, null, null, null, null, "wall"],
+//     ["wall", null, null, null, null, null, "brick", null, null, null, null, "brick", null, null, null, null, null, null, null, "wall"],
 
-    ["wall", null, null, null, "brick", null, null, null, null, "brick", null, null, null, null, "brick", null, null, null, null, "wall"],
+//     ["wall", null, null, null, "brick", null, null, null, null, "brick", null, null, null, null, "brick", null, null, null, null, "wall"],
 
-    ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"],
-];
+//     ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"],
+// ];
 export enum SCENE_MAP {
     PLAYING = 'playing',
     TIMER = 'timer',
@@ -70,3 +70,25 @@ export enum SCENE_MAP {
 
 
 export const BASE_MAN_SPEED = 10
+
+export const gameMapMatrix: OriginMapMatrix = [
+  Array(10).fill("wall"),
+
+  ["wall","man1",null,"brick",null,null,"brick",null,null,"wall"],
+
+  ["wall",null,"brick",null,"brick",null,null,"brick",null,"wall"],
+
+  ["wall",null,null,"brick",null,"brick",null,null,"brick","wall"],
+
+  ["wall","brick",null,null,null,null,null,"brick",null,"wall"],
+
+  ["wall",null,"brick",null,"brick",null,"brick",null,null,"wall"],
+
+  ["wall",null,null,"brick",null,null,null,"brick","man2","wall"],
+
+  ["wall","brick",null,null,"brick",null,null,null,"brick","wall"],
+
+  ["wall","man3",null,"brick",null,"brick",null,null,"man4","wall"],
+
+  Array(10).fill("wall"),
+];

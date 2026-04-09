@@ -74,7 +74,7 @@ const createAllManAnims = (scene: Scene) => {
         createAnim(scene, config.down, m, 3, 5);
         createAnim(scene, config.right, m, 7, 9);
         createAnim(scene, config.up, m, 10, 12);
-        createAnim(scene, config.die, m, 14, 20, false, false);
+        createAnim(scene, config.die, m, 14, 19, false, false);
     })
 }
 

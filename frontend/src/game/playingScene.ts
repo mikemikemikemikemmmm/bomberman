@@ -8,17 +8,12 @@ import { EventManager } from './event/eventManager';
 import { TimeSyncManager } from './timeSyncManager';
 import { useGlobalStore } from '../store';
 import { TimerUIScene } from './uiScenes/timerUI';
-import { MapManager } from './mapManager';
-import { wsEmitter } from '../websocket';
 
 
 export class PlayingScene extends Scene {
-    mapManager: MapManager
-    objManager: ObjManager
     inputManager: InputManager
     eventManager: EventManager
     timeSyncManager: TimeSyncManager
-    private lastRenderTimeMs = 0
     private gameActive = false
     private isAlive = true
     private gameEndTime: number
@@ -36,9 +31,10 @@ export class PlayingScene extends Scene {
         if (!gameMetaData) {
             throw Error("error")
         }
+        this.gameEndTime = gameMetaData.gameEndTime
         this.inputManager = new InputManager(this.input)
-        this.objManager = new ObjManager(this, gameMetaData)
-        this.eventManager = new EventManager(this.objManager)
+        const objManager = new ObjManager(this, gameMetaData)
+        this.eventManager = new EventManager(objManager, () => this.endGame())
 
 
         // this.timeSyncManager = new TimeSyncManager(
@@ -60,39 +56,33 @@ export class PlayingScene extends Scene {
     private getTimerUiScene(): TimerUIScene | null {
         return this.scene.get(SCENE_MAP.TIMER) as TimerUIScene | null
     }
-    update(gameTotalTimeMs: number, _delta: number): void {
-        if (this.gameActive) {
-            this.getTimerUiScene()?.setTimer(Math.max(0, this.gameEndTime - Date.now()))
-        }
-        if (!this.gameActive) return
-        this.objManager.handleCountdownObjTime(_delta)
+    update(): void {
+        // if (this.gameActive) {
+        //     this.getTimerUiScene()?.setTimer(Math.max(0, this.gameEndTime - Date.now()))
+        // }
+        // if (!this.gameActive) return
         this.handleRenderGameFrame()
-        this.lastRenderTimeMs = gameTotalTimeMs
     }
 
     handleRenderGameFrame() {
         this.eventManager.consumeStateChangeEvent()
-        const selfPlayerObj = this.objManager.players.find(p => p.isSelf)
-        if (!selfPlayerObj) {
-            if (this.isAlive) {
-                this.isAlive = false
-                this.getTimerUiScene()?.showSpectating()
-            }
+        const selfPlayerObj = this.eventManager.objManager.players.find(p => p.isSelf)
+        // console.log(selfPlayerObj,213)
+        if (!selfPlayerObj || !selfPlayerObj.isAlive) {
+            this.getTimerUiScene()?.showSpectating()
             return
         }
         const pressedDir = this.inputManager.getDirectionPressed()
         if (pressedDir) {
-            const successPayload = this.objManager.handleSelfPositionChange(selfPlayerObj, pressedDir)
-            if (successPayload) {
-                wsEmitter.sendEventToServer("playerMove", successPayload as never)
-            }
+            const successPayload = this.eventManager.objManager.handleSelfPositionChange(selfPlayerObj, pressedDir)
+            this.eventManager.sendSelfManMoveEvent(successPayload)
         } else {
             selfPlayerObj.sprite.anims.stop()
         }
         if (this.inputManager.isBombButtonPressed()) {
-            const successPayload = this.objManager.handleSelfPlaceBomb(selfPlayerObj)
+            const successPayload = this.eventManager.objManager.handleSelfPlaceBomb(selfPlayerObj)
             if (successPayload) {
-                wsEmitter.sendEventToServer("generateBomb", successPayload as never)
+                this.eventManager.sendGenerateBombEvent(successPayload)
             }
         }
     }

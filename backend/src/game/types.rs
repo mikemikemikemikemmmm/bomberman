@@ -45,13 +45,30 @@ pub enum ItemType {
     MoreBomb,
 }
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GridPos {
-    pub x: u32,
-    pub y: u32,
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum ObjType {
+    #[serde(rename = "man")]
+    Man,
+    #[serde(rename = "bomb")]
+    Bomb,
+    #[serde(rename = "brick")]
+    Brick,
+    #[serde(rename = "wall")]
+    Wall,
+    #[serde(rename = "item")]
+    Item,
+    #[serde(rename = "fire")]
+    Fire,
 }
-pub struct MapIndex{
-    pub x:u32,
-    pub y:u32
+
+#[derive(Clone)]
+pub struct MapIndex {
+    pub index_x: u32,
+    pub index_y: u32,
+}
+
+#[derive(Clone)]
+pub struct Position {
+    pub pos_x: u32,
+    pub pos_y: u32,
 }
