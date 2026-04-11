@@ -12,14 +12,14 @@ use crate::room::command::RoomCommand;
 use crate::room::room::ClientDataForState;
 use crate::state::{get_global_state, AppState, ClientState};
 use crate::ws::message::{
-    make_ws_msg_connected, ConnectedPayload, GenerateBombPayload, PlayerMovePayload,
+    make_ws_msg_connected, ConnectedPayload, ClientGenerateBombPayload, ClientMovePayload,
     TimeSyncPingPayload, WsRawMessage,
 };
 
 pub async fn handle_init_socket(socket: WebSocket) {
     let state = get_global_state();
     // let client_id = state.alloc_client_id();
-    let client_id =1;
+    let client_id = 1;
     let (sender, mut receiver) = mpsc::unbounded_channel::<Message>();
     state.client_sender_map.insert(client_id, sender.clone());
     state.client_state_map.insert(
@@ -62,7 +62,7 @@ pub async fn handle_init_socket(socket: WebSocket) {
     while let Some(Ok(msg)) = ws_receiver.next().await {
         match msg {
             Message::Text(text) => {
-                if let Err(e) = handle_msg(client_id, &text, state).await {
+                if let Err(e) = handle_receive_msg(client_id, &text, state).await {
                     error!("handle_msg error for client {}: {}", client_id, e);
                 }
             }
@@ -96,13 +96,13 @@ async fn cleanup_client(client_id: u32, state: &'static AppState) {
     state.client_state_map.remove(&client_id);
 }
 
-async fn handle_msg(
+async fn handle_receive_msg(
     client_id: u32,
     text: &str,
     state: &'static AppState,
 ) -> Result<(), serde_json::Error> {
     let raw: WsRawMessage = serde_json::from_str(text)?;
-    match raw.msg_type.as_str() {
+    match raw.r#type.as_str() {
         "setName" => {
             let name: String = serde_json::from_value(raw.payload)?;
             if let Some(mut cs) = state.client_state_map.get_mut(&client_id) {
@@ -135,52 +135,97 @@ async fn handle_msg(
                 .get(&client_id)
                 .map(|cs| cs.name.clone())
                 .unwrap_or_default();
-            state.send_to_room(room_id, RoomCommand::PlayerJoin { client_id, client_name: name });
+            state.send_to_room(
+                room_id,
+                RoomCommand::PlayerJoin {
+                    client_id,
+                    client_name: name,
+                },
+            );
         }
 
         "leaveRoom" => {
-            if let Some(rid) = state.client_state_map.get(&client_id).and_then(|cs| cs.room_id) {
+            if let Some(rid) = state
+                .client_state_map
+                .get(&client_id)
+                .and_then(|cs| cs.room_id)
+            {
                 state.send_to_room(rid, RoomCommand::PlayerLeave { client_id });
             }
         }
 
         "toggleReady" => {
-            if let Some(rid) = state.client_state_map.get(&client_id).and_then(|cs| cs.room_id) {
+            if let Some(rid) = state
+                .client_state_map
+                .get(&client_id)
+                .and_then(|cs| cs.room_id)
+            {
                 state.send_to_room(rid, RoomCommand::ToggleReady { client_id });
             }
         }
 
         "changeMap" => {
             let map_id: u32 = serde_json::from_value(raw.payload)?;
-            if let Some(rid) = state.client_state_map.get(&client_id).and_then(|cs| cs.room_id) {
+            if let Some(rid) = state
+                .client_state_map
+                .get(&client_id)
+                .and_then(|cs| cs.room_id)
+            {
                 state.send_to_room(rid, RoomCommand::ChangeMap { map_id });
             }
         }
 
         "startGame" => {
-            if let Some(rid) = state.client_state_map.get(&client_id).and_then(|cs| cs.room_id) {
-                state.send_to_room(rid, RoomCommand::StartGame { host_client_id: client_id });
+            if let Some(rid) = state
+                .client_state_map
+                .get(&client_id)
+                .and_then(|cs| cs.room_id)
+            {
+                state.send_to_room(
+                    rid,
+                    RoomCommand::StartGame {
+                        host_client_id: client_id,
+                    },
+                );
             }
         }
 
         "playerMove" => {
-            let payload: PlayerMovePayload = serde_json::from_value(raw.payload)?;
-            if let Some(gid) = state.client_state_map.get(&client_id).and_then(|cs| cs.game_id) {
+            let payload: ClientMovePayload = serde_json::from_value(raw.payload)?;
+            if let Some(gid) = state
+                .client_state_map
+                .get(&client_id)
+                .and_then(|cs| cs.game_id)
+            {
                 state.send_to_game(gid, GameCommand::PlayerMove(payload));
             }
         }
 
         "generateBomb" => {
-            let payload: GenerateBombPayload = serde_json::from_value(raw.payload)?;
-            if let Some(gid) = state.client_state_map.get(&client_id).and_then(|cs| cs.game_id) {
+            let payload: ClientGenerateBombPayload = serde_json::from_value(raw.payload)?;
+            if let Some(gid) = state
+                .client_state_map
+                .get(&client_id)
+                .and_then(|cs| cs.game_id)
+            {
                 state.send_to_game(gid, GameCommand::GenerateBomb(payload));
             }
         }
 
         "timeSyncPing" => {
             let payload: TimeSyncPingPayload = serde_json::from_value(raw.payload)?;
-            if let Some(gid) = state.client_state_map.get(&client_id).and_then(|cs| cs.game_id) {
-                state.send_to_game(gid, GameCommand::TimeSyncPing { client_id, sent_at: payload.sent_at });
+            if let Some(gid) = state
+                .client_state_map
+                .get(&client_id)
+                .and_then(|cs| cs.game_id)
+            {
+                state.send_to_game(
+                    gid,
+                    GameCommand::TimeSyncPing {
+                        client_id,
+                        sent_at: payload.sent_at,
+                    },
+                );
             }
         }
 
@@ -206,12 +251,6 @@ pub fn test_game_start(host_client_id: u32) {
         is_ready: true,
         man_sprite_key: crate::game::types::ManSpriteKey::Man1,
     });
-    tokio::spawn(run_game_actor(
-        game_id,
-        players,
-        1,
-        game_rx,
-        global_state,
-    ));
+    tokio::spawn(run_game_actor(game_id, players, 1, game_rx, global_state));
     // info!("room {} started game {}", room_id, game_id);
 }

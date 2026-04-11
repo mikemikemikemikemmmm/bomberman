@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 /// Every message on the wire: { "type": "...", "payload": ... }
 #[derive(Debug, Deserialize)]
 pub struct WsRawMessage {
-    pub msg_type: String,
+    pub  r#type: String,
     pub payload: serde_json::Value,
 }
 

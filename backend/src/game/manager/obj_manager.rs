@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use rand::Rng;
 
 use crate::game::config::{BRICK_RUIN_COUNTDOWN_MS, TILE_WIDTH};
+use crate::game::manager::map_manager::MapManager;
 use crate::game::objects::base::BaseObjTrait;
 use crate::game::objects::bomb::BombObj;
 use crate::game::objects::brick::BrickObj;
@@ -11,6 +12,7 @@ use crate::game::objects::item::ItemObj;
 use crate::game::objects::man::ManObj;
 use crate::game::types::{ItemType, ManDirection, ManSpriteKey, MapIndex, Position};
 use crate::game::utils::tran_index_to_pos;
+use crate::ws::message::ClientGenerateBombPayload;
 
 // ========================
 // Map tile types
@@ -18,7 +20,7 @@ use crate::game::utils::tran_index_to_pos;
 
 pub enum MapTile {
     Wall,
-    Bomb(BombObj),
+    Bomb,
     Brick(BrickObj),
     Item(ItemObj),
 }
@@ -27,7 +29,7 @@ impl MapTile {
     pub fn tile_type(&self) -> MapTileType {
         match self {
             MapTile::Wall => MapTileType::Wall,
-            MapTile::Bomb(_) => MapTileType::Bomb,
+            MapTile::Bomb => MapTileType::Bomb,
             MapTile::Brick(_) => MapTileType::Brick,
             MapTile::Item(_) => MapTileType::Item,
         }
@@ -81,78 +83,22 @@ pub struct MovePayload {
 
 pub struct ObjManager {
     pub players: Vec<ManObj>,
-    pub map: MapMatrix,
+    pub map_manager: MapManager,
     pub fires: Vec<FireObj>,
     /// Bricks in destroy animation: (tile index, remaining_ms).
     pub ruining_bricks: Vec<(MapIndex, u32)>,
+    pub bombs: Vec<BombObj>
 }
 
 impl ObjManager {
-    pub fn new(map: MapMatrix, players: Vec<ManObj>) -> Self {
+    pub fn new(map_manager: MapManager, players: Vec<ManObj>) -> Self {
         Self {
             players,
-            map,
+            map_manager,
             fires: vec![],
             ruining_bricks: vec![],
+            bombs: vec![],
         }
-    }
-
-    // ========================
-    // Map helpers
-    // ========================
-
-    pub fn get_tile_type(&self, index: &MapIndex) -> MapTileType {
-        let (ix, iy) = (index.index_x as usize, index.index_y as usize);
-        match self.map.get(iy).and_then(|row| row.get(ix)) {
-            None | Some(None) => MapTileType::Empty,
-            Some(Some(tile)) => tile.tile_type(),
-        }
-    }
-
-    pub fn clean_tile(&mut self, index: &MapIndex) {
-        let (ix, iy) = (index.index_x as usize, index.index_y as usize);
-        if let Some(row) = self.map.get_mut(iy) {
-            if let Some(cell) = row.get_mut(ix) {
-                *cell = None;
-            }
-        }
-    }
-
-    pub fn set_tile(&mut self, index: &MapIndex, tile: MapTile) {
-        let (ix, iy) = (index.index_x as usize, index.index_y as usize);
-        if let Some(row) = self.map.get_mut(iy) {
-            if let Some(cell) = row.get_mut(ix) {
-                *cell = Some(tile);
-            }
-        }
-    }
-
-    pub fn take_tile(&mut self, index: &MapIndex) -> Option<MapTile> {
-        let (ix, iy) = (index.index_x as usize, index.index_y as usize);
-        self.map.get_mut(iy)?.get_mut(ix)?.take()
-    }
-
-    fn bomb_positions(&self) -> Vec<MapIndex> {
-        let mut result = vec![];
-        for (y, row) in self.map.iter().enumerate() {
-            for (x, cell) in row.iter().enumerate() {
-                if matches!(cell, Some(MapTile::Bomb(_))) {
-                    result.push(MapIndex {
-                        index_x: x as u32,
-                        index_y: y as u32,
-                    });
-                }
-            }
-        }
-        result
-    }
-
-    fn map_height(&self) -> u32 {
-        self.map.len() as u32
-    }
-
-    fn map_width(&self) -> u32 {
-        self.map.first().map_or(0, |row| row.len() as u32)
     }
 
     // ========================
@@ -217,13 +163,10 @@ impl ObjManager {
         };
 
         // Tick bomb timers; collect expired positions
-        for pos in self.bomb_positions() {
-            let (ix, iy) = (pos.index_x as usize, pos.index_y as usize);
-            if let Some(Some(MapTile::Bomb(bomb))) = self.map.get_mut(iy).and_then(|r| r.get_mut(ix)) {
-                bomb.remaining_ms = bomb.remaining_ms.saturating_sub(pass_ms);
-                if bomb.remaining_ms == 0 {
-                    result.explode_bomb_positions.push(pos);
-                }
+        for bomb in self.bombs.iter_mut() {
+            bomb.remaining_ms = bomb.remaining_ms.saturating_sub(pass_ms);
+            if bomb.remaining_ms == 0 {
+                result.explode_bomb_positions.push(bomb.base.get_map_index());
             }
         }
 
@@ -240,15 +183,16 @@ impl ObjManager {
             }
             processed.insert(key);
 
-            let (ix, iy) = (pos.index_x as usize, pos.index_y as usize);
-            let power = match self.map.get(iy).and_then(|r| r.get(ix)) {
-                Some(Some(MapTile::Bomb(b))) => b.power,
-                _ => continue,
+            let power = match self.bombs.iter().find(|b| {
+                let idx = b.base.get_map_index();
+                idx.index_x == pos.index_x && idx.index_y == pos.index_y
+            }) {
+                Some(b) => b.power,
+                None => continue,
             };
 
             // Four directions: up, down, left, right
-            let dirs: [(i32, i32, usize); 4] =
-                [(0, -1, 0), (0, 1, 1), (-1, 0, 2), (1, 0, 3)];
+            let dirs: [(i32, i32, usize); 4] = [(0, -1, 0), (0, 1, 1), (-1, 0, 2), (1, 0, 3)];
             let mut spread = [0usize; 4]; // up, down, left, right
 
             for &(dx, dy, dir_idx) in &dirs {
@@ -263,11 +207,13 @@ impl ObjManager {
                         index_x: tx as u32,
                         index_y: ty as u32,
                     };
-                    if target.index_y >= self.map_height() || target.index_x >= self.map_width() {
+                    if target.index_y >= self.map_manager.height()
+                        || target.index_x >= self.map_manager.width()
+                    {
                         break;
                     }
 
-                    let tile_type = self.get_tile_type(&target);
+                    let tile_type = self.map_manager.get_tile_type(&target);
 
                     if tile_type == MapTileType::Wall {
                         break;
@@ -300,9 +246,9 @@ impl ObjManager {
                     if tile_type == MapTileType::Bomb {
                         let chain_key = (target.index_x, target.index_y);
                         if !processed.contains(&chain_key)
-                            && !to_process.iter().any(|p| {
-                                p.index_x == target.index_x && p.index_y == target.index_y
-                            })
+                            && !to_process
+                                .iter()
+                                .any(|p| p.index_x == target.index_x && p.index_y == target.index_y)
                         {
                             result.explode_bomb_positions.push(target.clone());
                             to_process.push(target);
@@ -337,18 +283,26 @@ impl ObjManager {
             self.fires.push(FireObj::new(fc));
         }
 
-        // Decrement usedBombNum for bomb owners and remove bombs from map
+        // Decrement usedBombNum for bomb owners and remove bombs from map and bombs list
         for pos in &explode_data.explode_bomb_positions {
-            let man_key = match self.map.get(pos.index_y as usize).and_then(|r| r.get(pos.index_x as usize)) {
-                Some(Some(MapTile::Bomb(b))) => Some(b.man_sprite_key.clone()),
-                _ => None,
-            };
+            let man_key = self
+                .bombs
+                .iter()
+                .find(|b| {
+                    let idx = b.base.get_map_index();
+                    idx.index_x == pos.index_x && idx.index_y == pos.index_y
+                })
+                .map(|b| b.man_sprite_key.clone());
             if let Some(key) = man_key {
-                if let Some(owner) = self.players.iter_mut().find(|p| p.man_sprite_key == key) {
+                if let Some(owner) = self.get_mut_ref_player_by_key(&key) {
                     owner.used_bomb_num = owner.used_bomb_num.saturating_sub(1);
                 }
             }
-            self.clean_tile(pos);
+            self.bombs.retain(|b| {
+                let idx = b.base.get_map_index();
+                idx.index_x != pos.index_x || idx.index_y != pos.index_y
+            });
+            self.map_manager.clean_tile(pos);
         }
 
         // Ruin bricks and possibly spawn items
@@ -356,7 +310,7 @@ impl ObjManager {
         let mut rng = rand::thread_rng();
 
         for pos in &explode_data.ruin_brick_positions {
-            self.clean_tile(pos);
+            self.map_manager.clean_tile(pos);
             self.ruining_bricks.push((pos.clone(), BRICK_RUIN_COUNTDOWN_MS));
 
             // 3/5 chance to drop an item (matches TypeScript: randomInt <= 2 out of 0..4)
@@ -367,14 +321,14 @@ impl ObjManager {
                     _ => ItemType::Fire,
                 };
                 let item = ItemObj::new(pos, item_type.clone());
-                self.set_tile(pos, MapTile::Item(item));
+                self.map_manager.set_tile(pos, MapTile::Item(item));
                 spawned_items.push((pos.clone(), item_type));
             }
         }
 
         // Destroy items caught in explosion
         for pos in &explode_data.destroy_item_positions {
-            self.clean_tile(pos);
+            self.map_manager.clean_tile(pos);
         }
 
         spawned_items
@@ -387,13 +341,13 @@ impl ObjManager {
     pub fn handle_create_item_event(&mut self, x: u32, y: u32, item_type: ItemType) {
         let index = MapIndex { index_x: x, index_y: y };
         let item = ItemObj::new(&index, item_type);
-        self.set_tile(&index, MapTile::Item(item));
+        self.map_manager.set_tile(&index, MapTile::Item(item));
     }
 
     pub fn handle_remove_item_event(&mut self, x: u32, y: u32) {
         let index = MapIndex { index_x: x, index_y: y };
-        if self.get_tile_type(&index) == MapTileType::Item {
-            self.clean_tile(&index);
+        if self.map_manager.get_tile_type(&index) == MapTileType::Item {
+            self.map_manager.clean_tile(&index);
         }
     }
 
@@ -414,16 +368,21 @@ impl ObjManager {
         let mut pickups: Vec<(ManSpriteKey, MapIndex, ItemType)> = vec![];
 
         for (key, index) in player_infos {
-            let item_type = match self.map.get(index.index_y as usize).and_then(|r| r.get(index.index_x as usize)) {
+            let item_type = match self
+                .map_manager
+                .map
+                .get(index.index_y as usize)
+                .and_then(|r| r.get(index.index_x as usize))
+            {
                 Some(Some(MapTile::Item(item))) => Some(item.item_type.clone()),
                 _ => None,
             };
             if let Some(it) = item_type {
-                if let Some(player) = self.players.iter_mut().find(|p| p.man_sprite_key == key) {
+                if let Some(player) = self.get_mut_ref_player_by_key(&key) {
                     player.eat_item(&it);
                 }
                 pickups.push((key, index.clone(), it));
-                self.clean_tile(&index);
+                self.map_manager.clean_tile(&index);
             }
         }
 
@@ -434,53 +393,49 @@ impl ObjManager {
     // Bomb placement
     // ========================
 
-    pub fn handle_self_place_bomb(&mut self, man_sprite_key: &ManSpriteKey) -> Option<PlaceBombPayload> {
-        let (bomb_index, bomb_power) = {
-            let player = self.players.iter().find(|p| &p.man_sprite_key == man_sprite_key)?;
-            if player.used_bomb_num >= player.bomb_num {
-                return None;
-            }
-            let bomb_index = player.base.get_center_map_index();
-            let tile_type = self.get_tile_type(&bomb_index);
-            if matches!(tile_type, MapTileType::Bomb | MapTileType::Brick | MapTileType::Wall) {
-                return None;
-            }
-            (bomb_index, player.bomb_power)
-        };
+    fn get_mut_ref_player_by_key(&mut self, man_key: &ManSpriteKey) -> Option<&mut ManObj> {
+        self.players.iter_mut().find(|p| &p.man_sprite_key == man_key)
+    }
 
-        let bomb = BombObj::new(&bomb_index, bomb_power, man_sprite_key.clone());
-        let payload = PlaceBombPayload {
-            man_key: man_sprite_key.clone(),
+    fn get_ref_player_by_key(&self, man_key: &ManSpriteKey) -> Option<&ManObj> {
+        self.players.iter().find(|p| &p.man_sprite_key == man_key)
+    }
+
+    pub fn handle_player_place_bomb(
+        &mut self,
+        payload: &ClientGenerateBombPayload,
+    ) -> Option<PlaceBombPayload> {
+        let bomb_index = MapIndex {
+            index_x: payload.index_x,
+            index_y: payload.index_y,
+        };
+        let player: &ManObj = self.get_ref_player_by_key(&payload.man_key)?;
+        if player.used_bomb_num >= player.bomb_num {
+            return None;
+        }
+        let bomb_power = player.bomb_power;
+        let tile_type = self.map_manager.get_tile_type(&bomb_index);
+        let can_place_at_tile = matches!(tile_type, MapTileType::Empty | MapTileType::Item);
+        if !can_place_at_tile {
+            return None;
+        }
+        let bomb = BombObj::new(&bomb_index, bomb_power, payload.man_key.clone());
+        let bomb_pos = tran_index_to_pos(&bomb_index);
+        let mut_player: &mut ManObj = self.get_mut_ref_player_by_key(&payload.man_key)?;
+        mut_player.can_pass_bomb_pos_list.push(bomb_pos);
+        mut_player.used_bomb_num += 1;
+
+        self.map_manager.set_tile(&bomb_index, MapTile::Bomb);
+        self.bombs.push(bomb);
+        let result = PlaceBombPayload {
+            man_key: payload.man_key.clone(),
             x: bomb_index.index_x,
             y: bomb_index.index_y,
             bomb_power,
         };
-
-        let bomb_pos = tran_index_to_pos(&bomb_index);
-        self.set_tile(&bomb_index, MapTile::Bomb(bomb));
-
-        if let Some(player) = self.players.iter_mut().find(|p| &p.man_sprite_key == man_sprite_key) {
-            player.can_pass_bomb_pos_list.push(bomb_pos);
-            player.used_bomb_num += 1;
-        }
-
-        Some(payload)
+        Some(result)
     }
 
-    pub fn handle_generate_bomb_event(
-        &mut self,
-        x: u32,
-        y: u32,
-        bomb_power: u32,
-        man_sprite_key: ManSpriteKey,
-    ) {
-        let index = MapIndex { index_x: x, index_y: y };
-        let tile_type = self.get_tile_type(&index);
-        if matches!(tile_type, MapTileType::Empty | MapTileType::Item) {
-            let bomb = BombObj::new(&index, bomb_power, man_sprite_key);
-            self.set_tile(&index, MapTile::Bomb(bomb));
-        }
-    }
 
     // ========================
     // Player movement
@@ -494,7 +449,7 @@ impl ObjManager {
         pressed_dir: &ManDirection,
     ) -> Option<MovePayload> {
         let (prev_x, prev_y, speed) = {
-            let player = self.players.iter().find(|p| &p.man_sprite_key == man_sprite_key)?;
+            let player = self.get_ref_player_by_key(man_sprite_key)?;
             let pos = player.base.get_position();
             (pos.pos_x, pos.pos_y, player.speed)
         };
@@ -508,8 +463,11 @@ impl ObjManager {
         }
 
         let mut can_move = {
-            let player = self.players.iter().find(|p| &p.man_sprite_key == man_sprite_key)?;
-            self.can_man_move_by_position(target_x, target_y, player)
+            let player = self.get_ref_player_by_key(man_sprite_key)?;
+            self.map_manager.can_man_move_by_position(
+                &Position { pos_x: target_x, pos_y: target_y },
+                player,
+            )
         };
         let mut final_x = target_x;
         let mut final_y = target_y;
@@ -528,8 +486,11 @@ impl ObjManager {
                             final_x = target_x;
                         }
                         can_move = {
-                            let player = self.players.iter().find(|p| &p.man_sprite_key == man_sprite_key)?;
-                            self.can_man_move_by_position(final_x, final_y, player)
+                            let player = self.get_ref_player_by_key(man_sprite_key)?;
+                            self.map_manager.can_man_move_by_position(
+                                &Position { pos_x: final_x, pos_y: final_y },
+                                player,
+                            )
                         };
                     }
                 }
@@ -544,8 +505,11 @@ impl ObjManager {
                             final_y = target_y;
                         }
                         can_move = {
-                            let player = self.players.iter().find(|p| &p.man_sprite_key == man_sprite_key)?;
-                            self.can_man_move_by_position(final_x, final_y, player)
+                            let player = self.get_ref_player_by_key(man_sprite_key)?;
+                            self.map_manager.can_man_move_by_position(
+                                &Position { pos_x: final_x, pos_y: final_y },
+                                player,
+                            )
                         };
                     }
                 }
@@ -556,19 +520,18 @@ impl ObjManager {
                     ManDirection::Up => {
                         final_y = ((target_y + TILE_WIDTH - 1) / TILE_WIDTH) * TILE_WIDTH
                     }
-                    ManDirection::Down => {
-                        final_y = (target_y / TILE_WIDTH) * TILE_WIDTH
-                    }
+                    ManDirection::Down => final_y = (target_y / TILE_WIDTH) * TILE_WIDTH,
                     ManDirection::Left => {
                         final_x = ((target_x + TILE_WIDTH - 1) / TILE_WIDTH) * TILE_WIDTH
                     }
-                    ManDirection::Right => {
-                        final_x = (target_x / TILE_WIDTH) * TILE_WIDTH
-                    }
+                    ManDirection::Right => final_x = (target_x / TILE_WIDTH) * TILE_WIDTH,
                 }
                 can_move = {
-                    let player = self.players.iter().find(|p| &p.man_sprite_key == man_sprite_key)?;
-                    self.can_man_move_by_position(final_x, final_y, player)
+                    let player = self.get_ref_player_by_key(man_sprite_key)?;
+                    self.map_manager.can_man_move_by_position(
+                        &Position { pos_x: final_x, pos_y: final_y },
+                        player,
+                    )
                 };
             }
         }
@@ -577,7 +540,7 @@ impl ObjManager {
         self.handle_can_pass_bomb(man_sprite_key, final_x, final_y);
 
         // Apply new position and direction
-        if let Some(player) = self.players.iter_mut().find(|p| &p.man_sprite_key == man_sprite_key) {
+        if let Some(player) = self.get_mut_ref_player_by_key(man_sprite_key) {
             player.base.position.pos_x = final_x;
             player.base.position.pos_y = final_y;
             player.set_dir(pressed_dir.clone());
@@ -603,11 +566,7 @@ impl ObjManager {
         final_x: u32,
         final_y: u32,
     ) {
-        if let Some(player) = self
-            .players
-            .iter_mut()
-            .find(|p| &p.man_sprite_key == man_sprite_key)
-        {
+        if let Some(player) = self.get_mut_ref_player_by_key(man_sprite_key) {
             player.can_pass_bomb_pos_list.retain(|bomb_pos| {
                 let dx = (bomb_pos.pos_x as i64 - final_x as i64).unsigned_abs();
                 let dy = (bomb_pos.pos_y as i64 - final_y as i64).unsigned_abs();
@@ -616,44 +575,12 @@ impl ObjManager {
         }
     }
 
-    fn can_man_move_by_position(&self, pos_x: u32, pos_y: u32, man_obj: &ManObj) -> bool {
-        let tw = TILE_WIDTH;
-        let corners = [
-            (pos_x, pos_y),
-            (pos_x + tw - 1, pos_y),
-            (pos_x, pos_y + tw - 1),
-            (pos_x + tw - 1, pos_y + tw - 1),
-        ];
-
-        corners.iter().all(|&(cx, cy)| {
-            let ix = cx / tw;
-            let iy = cy / tw;
-
-            let index = MapIndex { index_x: ix, index_y: iy };
-            let tile_type = self.get_tile_type(&index);
-
-            match tile_type {
-                MapTileType::Wall | MapTileType::Brick => false,
-                MapTileType::Bomb => {
-                    // Allow passing through if player placed the bomb and still overlaps it
-                    man_obj.can_pass_bomb_pos_list.iter().any(|bp| {
-                        cx >= bp.pos_x
-                            && cx < bp.pos_x + tw
-                            && cy >= bp.pos_y
-                            && cy < bp.pos_y + tw
-                    })
-                }
-                _ => true,
-            }
-        })
-    }
-
     // ========================
     // Player death
     // ========================
 
     pub fn handle_player_die(&mut self, man_key: &ManSpriteKey) {
-        if let Some(player) = self.players.iter_mut().find(|p| &p.man_sprite_key == man_key) {
+        if let Some(player) = self.get_mut_ref_player_by_key(man_key) {
             player.is_alive = false;
         }
     }

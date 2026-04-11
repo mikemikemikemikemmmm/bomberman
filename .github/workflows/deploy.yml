@@ -3,7 +3,8 @@ name: Deploy Vite Project
 on:
   push:
     branches: [ main ] # 如果你的主分支叫 master，請改為 master
-
+    paths:
+      - 'frontend-offline/**' # 只在 frontend-offline 目錄下的文件有變動時觸發部署
 # 設定 GITHUB_TOKEN 的權限，允許部署到 GitHub Pages
 permissions:
   contents: read

@@ -1,4 +1,4 @@
-use crate::game::config::{BASE_MAN_SPEED, MAX_BOMB_NUM, MAX_BOMB_POWER, MAX_SPEED};
+use crate::game::config::{ MAX_BOMB_NUM, MAX_BOMB_POWER, MAX_SPEED, START_BOMB_NUM, START_BOMB_POWER, START_SPEED};
 use crate::game::types::{ItemType, ManDirection, ManSpriteKey, MapIndex, ObjType, Position};
 use super::base::BaseObj;
 
@@ -24,9 +24,9 @@ impl ManObj {
             dir: ManDirection::Down,
             is_moving: false,
             used_bomb_num: 0,
-            speed: BASE_MAN_SPEED,
-            bomb_num: 2,
-            bomb_power: 2,
+            speed: START_SPEED,
+            bomb_num: START_BOMB_NUM,
+            bomb_power: START_BOMB_POWER,
             can_pass_bomb_pos_list: vec![],
         }
     }

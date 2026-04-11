@@ -11,8 +11,8 @@ use crate::game::map::MapMatrixCell;
 use crate::game::obj_manager::game_state::{DestroyingBrick, Fire, GameState, Item};
 use crate::game::types::ItemType;
 use crate::ws::message::{
-    BombExplodePayload, CreateItemPayload, GameStateChangedPayload, GridPos, PlayerDiePayload,
-    RemoveItemPayload,
+    SendBombExplodePayload, SendCreateItemPayload, SendGameStateChangedPayload, GridPos, SendPlayerDiePayload,
+    SendRemoveItemPayload,
 };
 
 fn now_ms() -> u64 {
@@ -71,7 +71,7 @@ fn compute_explosion(
     (cells, destroyed_bricks)
 }
 
-pub fn process_bombs(gs: &mut GameState, changes: &mut GameStateChangedPayload) {
+pub fn process_bombs(gs: &mut GameState, changes: &mut SendGameStateChangedPayload) {
     let now = now_ms();
 
     let mut explode_queue: VecDeque<(i32, i32, u32)> = gs
@@ -129,7 +129,7 @@ pub fn process_bombs(gs: &mut GameState, changes: &mut GameStateChangedPayload) 
             .map(|item| (item.x, item.y))
             .collect();
         for &(rx, ry) in &removed {
-            changes.removed_items.push(RemoveItemPayload { x: rx, y: ry });
+            changes.removed_items.push(SendRemoveItemPayload { x: rx, y: ry });
         }
         gs.items.retain(|item| !cells.iter().any(|c| c.x == item.x && c.y == item.y));
 
@@ -152,7 +152,7 @@ pub fn process_bombs(gs: &mut GameState, changes: &mut GameStateChangedPayload) 
                     y: dby,
                     item_type: item_type.clone(),
                 });
-                changes.new_items.push(CreateItemPayload {
+                changes.new_items.push(SendCreateItemPayload {
                     x: dbx,
                     y: dby,
                     item_type,
@@ -170,14 +170,14 @@ pub fn process_bombs(gs: &mut GameState, changes: &mut GameStateChangedPayload) 
                 let py = player.y.load(Ordering::Relaxed) as i32 / TILE_WIDTH as i32;
                 if px == fire_cell.x && py == fire_cell.y {
                     player.is_alive.store(false, Ordering::Relaxed);
-                    changes.player_deaths.push(PlayerDiePayload {
+                    changes.player_deaths.push(SendPlayerDiePayload {
                         man_key: player.man_sprite_key.clone(),
                     });
                 }
             }
         }
 
-        changes.bomb_explosions.push(BombExplodePayload {
+        changes.bomb_explosions.push(SendBombExplodePayload {
             x: bx,
             y: by,
             cells,

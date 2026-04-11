@@ -10,7 +10,7 @@ use crate::game::config::GAME_TICK_MS;
 use crate::game::map_data::ALL_MAP_DATA;
 use crate::room::room::ClientDataForState;
 use crate::state::AppState;
-use crate::ws::message::{make_ws_msg_game_started, GameStartedPayload};
+use crate::ws::message::{make_ws_msg_game_started, SendGameStartedPayload};
 
 pub async fn run_game_actor(
     game_id: u32,
@@ -43,7 +43,7 @@ pub async fn run_game_actor(
     let mut event_manager = EventManager::new(map_data, &players);
 
     let start_msg = Message::Text(
-        make_ws_msg_game_started(GameStartedPayload {
+        make_ws_msg_game_started(SendGameStartedPayload {
             game_id,
             game_end_time: event_manager.game_end_time,
         })

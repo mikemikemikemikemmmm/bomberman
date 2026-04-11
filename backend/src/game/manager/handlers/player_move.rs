@@ -5,9 +5,9 @@ use crate::game::map::MapMatrixCell;
 use crate::game::player::Dir;
 use crate::game::obj_manager::game_state::GameState;
 use crate::game::types::ManDirection;
-use crate::ws::message::PlayerMovePayload;
+use crate::ws::message::ClientMovePayload;
 
-pub fn handle_player_move(gs: &mut GameState, payload: &PlayerMovePayload) {
+pub fn handle_player_move(gs: &mut GameState, payload: &ClientMovePayload) {
     let is_move_accepted: bool = (|| {
         let player = match gs.players.get(&payload.man_key) {
             Some(p) => p,

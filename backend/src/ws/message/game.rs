@@ -6,7 +6,7 @@ use crate::game::types::{ItemType, ManDirection, ManSpriteKey};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct PlayerMovePayload {
+pub struct ClientMovePayload {
     pub man_key: ManSpriteKey,
     pub new_x: u32,
     pub new_y: u32,
@@ -16,11 +16,10 @@ pub struct PlayerMovePayload {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct GenerateBombPayload {
+pub struct ClientGenerateBombPayload {
     pub man_key: ManSpriteKey,
-    pub x: i32,
-    pub y: i32,
-    pub bomb_power: u32,
+    pub index_x: u32,
+    pub index_y: u32
 }
 
 #[derive(Debug, Deserialize)]
@@ -41,7 +40,7 @@ pub struct GridPos {
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct BombExplodePayload {
+pub struct SendBombExplodePayload {
     pub x: i32,
     pub y: i32,
     pub cells: Vec<GridPos>,
@@ -49,7 +48,7 @@ pub struct BombExplodePayload {
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct CreateItemPayload {
+pub struct SendCreateItemPayload {
     pub x: i32,
     pub y: i32,
     pub item_type: ItemType,
@@ -57,111 +56,111 @@ pub struct CreateItemPayload {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PlayerDiePayload {
+pub struct SendPlayerDiePayload {
     pub man_key: ManSpriteKey,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TimeSyncPongPayload {
+pub struct SendTimeSyncPongPayload {
     pub sent_at: i64,
     pub to: String,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GameStartedPayload {
+pub struct SendGameStartedPayload {
     pub game_id: u32,
     pub game_end_time: u64,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TimeSyncBroadcastPayload {
+pub struct SendTimeSyncBroadcastPayload {
     pub game_end_time: i64,
     pub sent_at: i64,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GameOverPayload {
+pub struct SendGameOverPayload {
     pub winner_key: Option<ManSpriteKey>,
 }
 
-pub fn make_ws_msg_game_started(payload: GameStartedPayload) -> String {
+pub fn make_ws_msg_game_started(payload: SendGameStartedPayload) -> String {
     super::make_ws_msg("gameStarted", &payload)
 }
 
-pub fn make_ws_msg_player_move(payload: &PlayerMovePayload) -> String {
+pub fn make_ws_msg_player_move(payload: &ClientMovePayload) -> String {
     super::make_ws_msg("playerMove", payload)
 }
 
-pub fn make_ws_msg_generate_bomb(payload: &GenerateBombPayload) -> String {
+pub fn make_ws_msg_generate_bomb(payload: &ClientGenerateBombPayload) -> String {
     super::make_ws_msg("generateBomb", payload)
 }
 
-pub fn make_ws_msg_time_sync_pong(payload: TimeSyncPongPayload) -> String {
+pub fn make_ws_msg_time_sync_pong(payload: SendTimeSyncPongPayload) -> String {
     super::make_ws_msg("timeSyncPong", &payload)
 }
 
-pub fn make_ws_msg_bomb_explode(payload: BombExplodePayload) -> String {
+pub fn make_ws_msg_bomb_explode(payload: SendBombExplodePayload) -> String {
     super::make_ws_msg("bombExplode", &payload)
 }
 
-pub fn make_ws_msg_create_item(payload: CreateItemPayload) -> String {
+pub fn make_ws_msg_create_item(payload: SendCreateItemPayload) -> String {
     super::make_ws_msg("createItem", &payload)
 }
 
-pub fn make_ws_msg_player_die(payload: PlayerDiePayload) -> String {
+pub fn make_ws_msg_player_die(payload: SendPlayerDiePayload) -> String {
     super::make_ws_msg("playerDie", &payload)
 }
 
-pub fn make_ws_msg_game_over(payload: GameOverPayload) -> String {
+pub fn make_ws_msg_game_over(payload: SendGameOverPayload) -> String {
     super::make_ws_msg("gameOver", &payload)
 }
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ItemEatenPayload {
+pub struct SendItemEatenPayload {
     pub man_key: ManSpriteKey,
     pub x: i32,
     pub y: i32,
     pub item_type: ItemType,
 }
 
-pub fn make_ws_msg_item_eaten(payload: &ItemEatenPayload) -> String {
+pub fn make_ws_msg_item_eaten(payload: &SendItemEatenPayload) -> String {
     super::make_ws_msg("itemEaten", payload)
 }
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct RemoveItemPayload {
+pub struct SendRemoveItemPayload {
     pub x: i32,
     pub y: i32,
 }
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct RemoveFirePayload {
+pub struct SendRemoveFirePayload {
     pub x: i32,
     pub y: i32,
 }
 
 #[derive(Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct GameStateChangedPayload {
-    pub player_moves: Vec<PlayerMovePayload>,
-    pub new_bombs: Vec<GenerateBombPayload>,
-    pub bomb_explosions: Vec<BombExplodePayload>,
-    pub new_items: Vec<CreateItemPayload>,
-    pub removed_items: Vec<RemoveItemPayload>,
-    pub removed_fires: Vec<RemoveFirePayload>,
-    pub player_deaths: Vec<PlayerDiePayload>,
-    pub items_eaten: Vec<ItemEatenPayload>,
-    pub game_over: Option<GameOverPayload>,
+pub struct SendGameStateChangedPayload {
+    pub player_moves: Vec<ClientMovePayload>,
+    pub new_bombs: Vec<ClientGenerateBombPayload>,
+    pub bomb_explosions: Vec<SendBombExplodePayload>,
+    pub new_items: Vec<SendCreateItemPayload>,
+    pub removed_items: Vec<SendRemoveItemPayload>,
+    pub removed_fires: Vec<SendRemoveFirePayload>,
+    pub player_deaths: Vec<SendPlayerDiePayload>,
+    pub items_eaten: Vec<SendItemEatenPayload>,
+    pub game_over: Option<SendGameOverPayload>,
 }
 
-impl GameStateChangedPayload {
+impl SendGameStateChangedPayload {
     pub fn is_empty(&self) -> bool {
         self.player_moves.is_empty()
             && self.new_bombs.is_empty()
@@ -175,7 +174,7 @@ impl GameStateChangedPayload {
     }
 }
 
-pub fn make_ws_msg_game_state_changed(payload: &GameStateChangedPayload) -> String {
+pub fn make_ws_msg_game_state_changed(payload: &SendGameStateChangedPayload) -> String {
     let mut events: Vec<serde_json::Value> = Vec::new();
 
     for pm in &payload.player_moves {
@@ -196,9 +195,8 @@ pub fn make_ws_msg_game_state_changed(payload: &GameStateChangedPayload) -> Stri
             "type": "generateBomb",
             "payload": {
                 "manSpriteKey": bomb.man_key,
-                "x": bomb.x,
-                "y": bomb.y,
-                "bombPower": bomb.bomb_power,
+                "x": bomb.index_x,
+                "y": bomb.index_y
             }
         }));
     }

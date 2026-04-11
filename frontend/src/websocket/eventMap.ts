@@ -15,10 +15,8 @@ export interface SendSelfPlayerMovePayload {
 
 export interface SendGenerateBombPayload {
   manKey: ManSpriteKey
-  x: number
-  y: number
-  bombPower: number
-  userId: number
+  indexX: number
+  indexY: number
 }
 
 interface GridPos { x: number; y: number }

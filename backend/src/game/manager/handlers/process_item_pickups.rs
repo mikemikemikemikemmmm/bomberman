@@ -3,9 +3,9 @@ use std::sync::atomic::Ordering;
 use crate::game::config::TILE_WIDTH;
 use crate::game::obj_manager::game_state::GameState;
 use crate::game::types::ItemType;
-use crate::ws::message::{GameStateChangedPayload, ItemEatenPayload};
+use crate::ws::message::{SendGameStateChangedPayload, SendItemEatenPayload};
 
-pub fn process_item_pickups(gs: &mut GameState, changes: &mut GameStateChangedPayload) {
+pub fn process_item_pickups(gs: &mut GameState, changes: &mut SendGameStateChangedPayload) {
     let mut eaten: Vec<usize> = vec![];
 
     for (idx, item) in gs.items.iter().enumerate() {
@@ -34,7 +34,7 @@ pub fn process_item_pickups(gs: &mut GameState, changes: &mut GameStateChangedPa
                         player.bomb_num.store(v.saturating_add(1), Ordering::Relaxed);
                     }
                 }
-                changes.items_eaten.push(ItemEatenPayload {
+                changes.items_eaten.push(SendItemEatenPayload {
                     man_key: player.man_sprite_key.clone(),
                     x: item.x,
                     y: item.y,

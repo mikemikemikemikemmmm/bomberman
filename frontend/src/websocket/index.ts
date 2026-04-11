@@ -12,13 +12,13 @@ export class WsEmitter {
   private connectionResolvers: (() => void)[] = [];
   private connectionRejectors: ((err: Error) => void)[] = [];
 
-  constructor(private url: string) { }
+  constructor() { }
 
   // ─── 連線 ────────────────────────────────────
 
   init() {
     if (this.ws?.readyState === WebSocket.OPEN) return; // 已連線不重複初始化
-    this.ws = new WebSocket("ws://localhost:8081");
+    this.ws = new WebSocket(WS_URL);
 
     this.ws.onopen = () => {
       console.log("connected success")
@@ -81,7 +81,7 @@ export class WsEmitter {
       return;
     }
     // console.log("send", type, payload)
-    this.ws.send(JSON.stringify({ msg_type:type, payload }));
+    this.ws.send(JSON.stringify({ type, payload }));
   }
 
   // ─── EventEmitter ────────────────────────────
@@ -120,4 +120,4 @@ export class WsEmitter {
   }
 }
 
-export const wsEmitter = new WsEmitter(WS_URL);
+export const wsEmitter = new WsEmitter();

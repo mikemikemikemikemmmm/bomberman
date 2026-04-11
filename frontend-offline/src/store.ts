@@ -1,7 +1,7 @@
 import { create } from "zustand"
 
 const initialState = {
-  mapId: 2,
+  mapId: 1,
   isPlaying: false,
 }
 

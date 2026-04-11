@@ -12,6 +12,7 @@ import { ANIMS } from "./sprite_animations/animations";
 import { GameMetaData, useGlobalStore } from "../store";
 import { BrickObj } from "./objects/brick";
 import { SendSelfPlayerMovePayload } from "../websocket/eventMap";
+import { ManSpriteKey } from "./sprite_animations/sprite";
 
 
 
@@ -27,8 +28,10 @@ export class ObjManager {
     bombs: BombObj[] = []
     fires: FireObj[] = []
     ruiningBricks: BrickObj[] = []
+    selfManSpriteKey: ManSpriteKey
     constructor(private scene: Scene, gameMetaData: GameMetaData) {
         this.mapManager = new MapManager(scene, gameMetaData, this.players)
+
     }
     ///by self
     handleSelfPositionChange(selfManObj: ManObj, pressedDir: PressedDir) {
@@ -95,7 +98,7 @@ export class ObjManager {
             isMoving: finalMoving,
             userId: useGlobalStore.getState().userId,
             newX: canMove ? finalX : prevX,
-            newY: canMove ? finalX : prevY,
+            newY: canMove ? finalY : prevY,
         } as SendSelfPlayerMovePayload
         // if (canMove) {
         //     eventPayloadToServer.newX = finalX
@@ -128,10 +131,8 @@ export class ObjManager {
         playerObj.usedBombNum++
         const payload = {
             manKey: playerObj.manSpriteKey,
-            x: bombIndex.indexX,
-            y: bombIndex.indexY,
-            bombPower: playerObj.bombPower,
-            userId: useGlobalStore.getState().userId as number
+            indexX: bombIndex.indexX,
+            indexY: bombIndex.indexY,
         }
         return payload
     }
@@ -143,7 +144,6 @@ export class ObjManager {
         // if (selfMan) return
         const { newX, newY, dir, isMoving, manKey } = playerMoveEventPayload
         const targetMan = this.players.find(p => p.manSpriteKey === manKey)
-        console.log(playerMoveEventPayload, 2222222222)
         if (!targetMan) {
             return
         }
@@ -152,6 +152,7 @@ export class ObjManager {
         targetMan.setMoving(isMoving)
     }
     handleGenerateBombEventFromServer(payload: GenerateBombEvent["payload"]) {
+        console.log("handleGenerateBombEventFromServer", payload)
         const index: MapIndex = { indexX: payload.x, indexY: payload.y }
         const targetTileType = this.mapManager.getMapTileTypeByIndex(index)
         if (targetTileType === "empty" || targetTileType === "item") {

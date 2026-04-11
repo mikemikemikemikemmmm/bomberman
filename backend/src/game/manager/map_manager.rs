@@ -10,6 +10,50 @@ pub struct MapManager {
     pub map: MapMatrix,
 }
 
+// ========================
+// Tile access helpers
+// ========================
+impl MapManager {
+    pub fn get_tile_type(&self, index: &MapIndex) -> MapTileType {
+        let (ix, iy) = (index.index_x as usize, index.index_y as usize);
+        match self.map.get(iy).and_then(|row| row.get(ix)) {
+            None | Some(None) => MapTileType::Empty,
+            Some(Some(tile)) => tile.tile_type(),
+        }
+    }
+
+    pub fn clean_tile(&mut self, index: &MapIndex) {
+        let (ix, iy) = (index.index_x as usize, index.index_y as usize);
+        if let Some(row) = self.map.get_mut(iy) {
+            if let Some(cell) = row.get_mut(ix) {
+                *cell = None;
+            }
+        }
+    }
+
+    pub fn set_tile(&mut self, index: &MapIndex, tile: MapTile) {
+        let (ix, iy) = (index.index_x as usize, index.index_y as usize);
+        if let Some(row) = self.map.get_mut(iy) {
+            if let Some(cell) = row.get_mut(ix) {
+                *cell = Some(tile);
+            }
+        }
+    }
+
+    pub fn take_tile(&mut self, index: &MapIndex) -> Option<MapTile> {
+        let (ix, iy) = (index.index_x as usize, index.index_y as usize);
+        self.map.get_mut(iy)?.get_mut(ix)?.take()
+    }
+
+    pub fn height(&self) -> u32 {
+        self.map.len() as u32
+    }
+
+    pub fn width(&self) -> u32 {
+        self.map.first().map_or(0, |row| row.len() as u32)
+    }
+}
+
 impl MapManager {
     /// Build a MapManager from static map data and a list of participating players
     /// (ordered: first element gets MAN1 spawn, second gets MAN2, etc.).
@@ -19,49 +63,6 @@ impl MapManager {
         let mut manager = Self { map: vec![] };
         let players = manager.init_by_map(map_data, player_man_keys);
         (manager, players)
-    }
-
-    // ========================
-    // Map helpers
-    // ========================
-
-    pub fn clean_map_tile_by_index(&mut self, index: &MapIndex) {
-        let (ix, iy) = (index.index_x as usize, index.index_y as usize);
-        if let Some(row) = self.map.get_mut(iy) {
-            if let Some(cell) = row.get_mut(ix) {
-                *cell = None;
-            }
-        } 
-    }
-
-    pub fn set_map_tile_by_index(&mut self, index: &MapIndex, tile: MapTile) {
-        let (ix, iy) = (index.index_x as usize, index.index_y as usize);
-        if let Some(row) = self.map.get_mut(iy) {
-            if let Some(cell) = row.get_mut(ix) {
-                *cell = Some(tile);
-            }
-        }
-    }
-
-    pub fn is_tile_empty(&self, index: &MapIndex) -> bool {
-        let (ix, iy) = (index.index_x as usize, index.index_y as usize);
-        matches!(
-            self.map.get(iy).and_then(|r| r.get(ix)),
-            Some(None) | None
-        )
-    }
-
-    pub fn get_map_tile_by_index(&self, index: &MapIndex) -> Option<&MapTile> {
-        let (ix, iy) = (index.index_x as usize, index.index_y as usize);
-        self.map.get(iy)?.get(ix)?.as_ref()
-    }
-
-    pub fn get_map_tile_type_by_index(&self, index: &MapIndex) -> MapTileType {
-        let (ix, iy) = (index.index_x as usize, index.index_y as usize);
-        match self.map.get(iy).and_then(|r| r.get(ix)) {
-            None | Some(None) => MapTileType::Empty,
-            Some(Some(tile)) => tile.tile_type(),
-        }
     }
 
     // ========================
@@ -79,7 +80,7 @@ impl MapManager {
 
         corners.iter().all(|p| {
             let map_index = tran_pos_to_index(p);
-            let tile_type = self.get_map_tile_type_by_index(&map_index);
+            let tile_type = self.get_tile_type(&map_index);
 
             match tile_type {
                 MapTileType::Wall | MapTileType::Brick => false,

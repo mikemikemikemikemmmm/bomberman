@@ -4,7 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
 
 use crate::game::obj_manager::game_state::GameState;
-use crate::ws::message::{GameOverPayload, GameStateChangedPayload};
+use crate::ws::message::{SendGameOverPayload, SendGameStateChangedPayload};
 
 fn now_ms() -> u64 {
     SystemTime::now()
@@ -13,7 +13,7 @@ fn now_ms() -> u64 {
         .as_millis() as u64
 }
 
-pub fn check_game_over(gs: &mut GameState, changes: &mut GameStateChangedPayload) {
+pub fn check_game_over(gs: &mut GameState, changes: &mut SendGameStateChangedPayload) {
     if gs.game_over {
         return;
     }
@@ -40,5 +40,5 @@ pub fn check_game_over(gs: &mut GameState, changes: &mut GameStateChangedPayload
     };
 
     info!("game over, winner: {:?}", winner);
-    changes.game_over = Some(GameOverPayload { winner_key: winner });
+    changes.game_over = Some(SendGameOverPayload { winner_key: winner });
 }

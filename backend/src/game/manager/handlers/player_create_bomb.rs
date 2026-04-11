@@ -3,7 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::game::config::{BOMB_FUSE_SECS, MAP_H, MAP_W};
 use crate::game::obj_manager::game_state::{Bomb, GameState};
-use crate::ws::message::GenerateBombPayload;
+use crate::ws::message::ClientGenerateBombPayload;
 
 fn now_ms() -> u64 {
     SystemTime::now()
@@ -12,7 +12,7 @@ fn now_ms() -> u64 {
         .as_millis() as u64
 }
 
-pub fn handle_player_create_bomb(gs: &mut GameState, payload: &GenerateBombPayload) {
+pub fn handle_player_create_bomb(gs: &mut GameState, payload: &ClientGenerateBombPayload) {
     let is_create_bomb_accepted: bool = (|| {
         let player = match gs.players.get(&payload.man_key) {
             Some(p) => p,

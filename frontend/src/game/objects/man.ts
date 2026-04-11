@@ -1,5 +1,5 @@
 import { useGlobalStore } from "../../store";
-import { BASE_MAN_SPEED } from "../gameConfig";
+import { BASE_MAN_SPEED, START_BOMB_NUM, START_BOMB_POWER, START_SPEED } from "../gameConfig";
 import { ManSpriteKey } from "../sprite_animations/sprite";
 import { ManDirection, MapIndex, Position } from "../types";
 import { BaseObj } from "./base";
@@ -12,22 +12,26 @@ const MAX_BOMB_POWER = 6
 
 export class ManObj extends BaseObj {
     // 自訂屬性
+    userId: number
     isAlive = true
-    isSelf: boolean = false
+    isSelf: boolean = true
     manSpriteKey: ManSpriteKey
     dir: ManDirection = "down"
     isMoving: boolean = false
     usedBombNum: number = 0
-    speed = BASE_MAN_SPEED
-    bombNum = 10
-    bombPower = 2
+    speed = START_SPEED
+    bombNum = START_BOMB_NUM
+    bombPower = START_BOMB_POWER    
+    
     canPassBombPosList: Position[] = []
     constructor(scene: Phaser.Scene, index: MapIndex, manSpriteKey: ManSpriteKey, userId: number) {
         super(scene, index, manSpriteKey, 5, "man");
         this.manSpriteKey = manSpriteKey
         this.sprite.setDepth(9)
-        const _userId = useGlobalStore.getState().userId
-        if (_userId === userId) {
+        this.userId = userId
+        const selfUserId = useGlobalStore.getState().userId
+        console.log(selfUserId, userId, 123)
+        if (selfUserId === userId) {
             this.isSelf = true
         }
     }

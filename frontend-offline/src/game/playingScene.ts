@@ -5,13 +5,13 @@ import { createAllAnims } from './sprite_animations/animations';
 import { SCENE_MAP } from './gameConfig';
 import { InputManager } from './inputManager';
 import { MapManager } from './mapManager';
-import { AIController } from '../ai';
+import { OnnxAiController } from './onnxAiController';
 
 export class PlayingScene extends Scene {
     mapManager: MapManager
     objManager: ObjManager
     inputManager: InputManager
-    aiController: AIController
+    private aiController: OnnxAiController
     private gameActive = false
     private gameEndTime: number
     hasLoadedAssets = false
@@ -26,11 +26,14 @@ export class PlayingScene extends Scene {
         if (!this.hasLoadedAssets) {
             createAllAnims(this)
             this.hasLoadedAssets = true
-
         }
         this.inputManager = new InputManager(this.input)
         this.objManager = new ObjManager(this)
-        this.aiController = new AIController(this.objManager)
+
+        this.aiController = new OnnxAiController()
+        this.aiController.load('/model.onnx').catch(err => {
+            console.warn('Failed to load ONNX model, AI will be inactive:', err)
+        })
         // this.eventManager = new EventManager(this.objManager)
 
 
@@ -61,32 +64,35 @@ export class PlayingScene extends Scene {
         })
     }
     update(_: number, delta: number): void {
-        // if (this.gameActive) {
-        //     this.getTimerUiScene()?.setTimer(Math.max(0, this.gameEndTime - Date.now()))
-        // }
         if (!this.gameActive) return
-        // this.eventManager.consumeStateChangeEvent()
         this.handleKeyboard(ManSpriteKey.Man1)
-        this.handleAI()
+        if (import.meta.env.VITE_USE_AI === 'true') {
+            this.handleAI(delta)
+        } else {
+            this.handleKeyboard(ManSpriteKey.Man2)
+        }
         this.objManager.handleCountdownObjTime(delta)
         this.objManager.checkPlayerDie()
         this.objManager.checkPlayerEatItem()
         this.checkGameOver()
-
     }
 
-    handleAI() {
+    private handleAI(delta: number): void {
         const aiMan = this.objManager.players.find(p => p.manSpriteKey === ManSpriteKey.Man2)
         if (!aiMan || !aiMan.isAlive) return
-        const { dir, placeBomb } = this.aiController.getInput()
-        if (dir) {
-            this.objManager.handleSelfPositionChange(aiMan, dir)
-        } else {
-            aiMan.sprite.anims.stop()
-        }
-        if (placeBomb) {
-            this.objManager.handlePlaceBomb(aiMan)
-        }
+
+        this.aiController.decide(delta, this.objManager, ManSpriteKey.Man2, ManSpriteKey.Man1)
+            .then(({ dir, placeBomb }) => {
+                if (!aiMan.isAlive) return
+                if (dir) {
+                    this.objManager.handleSelfPositionChange(aiMan, dir)
+                } else {
+                    aiMan.sprite.anims.stop()
+                }
+                if (placeBomb) {
+                    this.objManager.handlePlaceBomb(aiMan)
+                }
+            })
     }
 
     handleKeyboard(manSpriteKey: ManSpriteKey) {
